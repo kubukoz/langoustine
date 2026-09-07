@@ -54,6 +54,17 @@ private[lsp] trait IntEnum[T](using ev: T =:= Int):
   extension (t: T) inline def raw: Int = t.asInstanceOf[Int]
 end IntEnum
 
+/** Mixed into the companions of enumerations the LSP spec marks with
+  * `supportsCustomValues`, i.e. those where a peer is allowed to send a value
+  * outside the set defined by the specification.
+  */
+private[lsp] trait CustomIntValues[T](using ev: T =:= Int):
+  self: IntEnum[T] =>
+
+  /** Construct a value outside the set defined by the specification. */
+  def apply(n: Int): T = ev.flip.apply(n)
+end CustomIntValues
+
 private[lsp] trait StringEnum[T](using ev: T =:= String):
   given fromJson: Decoder[T] =
     io.circe.Decoder.decodeString.asInstanceOf[Decoder[T]]
@@ -79,6 +90,17 @@ private[lsp] trait StringEnum[T](using ev: T =:= String):
 
   extension (t: T) inline def raw: String = t.asInstanceOf[String]
 end StringEnum
+
+/** Mixed into the companions of enumerations the LSP spec marks with
+  * `supportsCustomValues`, i.e. those where a peer is allowed to send a value
+  * outside the set defined by the specification.
+  */
+private[lsp] trait CustomStringValues[T](using ev: T =:= String):
+  self: StringEnum[T] =>
+
+  /** Construct a value outside the set defined by the specification. */
+  def apply(n: String): T = ev.flip.apply(n)
+end CustomStringValues
 
 private[lsp] trait UIntEnum[T](using ev: T =:= uinteger):
   given fromJson: Decoder[T] =
@@ -108,3 +130,14 @@ private[lsp] trait UIntEnum[T](using ev: T =:= uinteger):
     inline def raw: uinteger = t.asInstanceOf[uinteger]
     inline def rawInt: Int   = t.asInstanceOf[Int]
 end UIntEnum
+
+/** Mixed into the companions of enumerations the LSP spec marks with
+  * `supportsCustomValues`, i.e. those where a peer is allowed to send a value
+  * outside the set defined by the specification.
+  */
+private[lsp] trait CustomUIntValues[T](using ev: T =:= uinteger):
+  self: UIntEnum[T] =>
+
+  /** Construct a value outside the set defined by the specification. */
+  def apply(n: uinteger): T = ev.flip.apply(n)
+end CustomUIntValues

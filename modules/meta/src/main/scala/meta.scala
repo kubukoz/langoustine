@@ -185,7 +185,8 @@ case class Enumeration(
     values: Vector[EnumerationEntry],
     documentation: Opt[EnumerationDocumentation] = Opt.empty,
     proposed: Boolean = false,
-    since: Opt[String] = Opt.empty
+    since: Opt[String] = Opt.empty,
+    supportsCustomValues: Boolean = false
 )
 
 sealed abstract class Type(

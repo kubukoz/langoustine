@@ -28,7 +28,9 @@ import scala.annotation.switch
   * @since 3.16.0
   */
 opaque type SemanticTokenModifiers = String
-object SemanticTokenModifiers extends StringEnum[SemanticTokenModifiers]:
+object SemanticTokenModifiers
+    extends StringEnum[SemanticTokenModifiers]
+    with CustomStringValues[SemanticTokenModifiers]:
   val declaration    = entry("declaration")
   val definition     = entry("definition")
   val readonly       = entry("readonly")

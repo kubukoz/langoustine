@@ -27,7 +27,9 @@ import scala.annotation.switch
   * @since 3.17.0
   */
 opaque type PositionEncodingKind = String
-object PositionEncodingKind extends StringEnum[PositionEncodingKind]:
+object PositionEncodingKind
+    extends StringEnum[PositionEncodingKind]
+    with CustomStringValues[PositionEncodingKind]:
   /** Character offsets count UTF-8 code units (e.g. bytes).
     */
   val UTF8 = entry("utf-8")

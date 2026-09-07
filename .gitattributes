@@ -1,0 +1,9 @@
+# Code generated from the LSP metaModel by `sbt generateLSP`.
+# Marked as generated so GitHub collapses it in diffs and excludes it
+# from language statistics. Edit the generator, not these files.
+modules/lsp/src/main/scala/generated/** linguist-generated=true
+
+# Vendored copies of the upstream LSP specification, fetched verbatim by
+# `sbt updateModelFiles`. Not written by hand.
+metaModel.json linguist-generated=true
+metaModel.schema.json linguist-generated=true

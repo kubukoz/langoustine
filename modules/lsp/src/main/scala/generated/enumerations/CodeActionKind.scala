@@ -25,7 +25,9 @@ import scala.annotation.switch
 /** A set of predefined code action kinds
   */
 opaque type CodeActionKind = String
-object CodeActionKind extends StringEnum[CodeActionKind]:
+object CodeActionKind
+    extends StringEnum[CodeActionKind]
+    with CustomStringValues[CodeActionKind]:
   /** Empty kind.
     */
   val Empty = entry("")

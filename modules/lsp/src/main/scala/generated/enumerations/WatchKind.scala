@@ -23,7 +23,7 @@ import scala.reflect.Typeable
 import scala.annotation.switch
 
 opaque type WatchKind = runtime.uinteger
-object WatchKind extends UIntEnum[WatchKind]:
+object WatchKind extends UIntEnum[WatchKind] with CustomUIntValues[WatchKind]:
   /** Interested in create events.
     */
   val Create = entry(1)

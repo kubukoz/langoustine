@@ -25,7 +25,9 @@ import scala.annotation.switch
 /** A set of predefined range kinds.
   */
 opaque type FoldingRangeKind = String
-object FoldingRangeKind extends StringEnum[FoldingRangeKind]:
+object FoldingRangeKind
+    extends StringEnum[FoldingRangeKind]
+    with CustomStringValues[FoldingRangeKind]:
   /** Folding range for a comment
     */
   val Comment = entry("comment")

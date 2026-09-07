@@ -22,6 +22,17 @@ def renderEnumeration(a: Enumeration, out: LineBuilder)(using
     case ET.integer  => "IntEnum"
     case ET.uinteger => "UIntEnum"
 
+  // Enumerations the spec marks with `supportsCustomValues` can legally carry
+  // values outside the set it defines, so their companions get a public
+  // constructor on top of the predefined entries.
+  val customValues =
+    if !a.supportsCustomValues then ""
+    else
+      base match
+        case ET.string   => s" with CustomStringValues[${a.name}]"
+        case ET.integer  => s" with CustomIntValues[${a.name}]"
+        case ET.uinteger => s" with CustomUIntValues[${a.name}]"
+
   a.documentation.toOption.foreach { d =>
     commentWriter(out) { cw =>
       cw.commentLine(d.value)
@@ -29,7 +40,7 @@ def renderEnumeration(a: Enumeration, out: LineBuilder)(using
   }
   line(s"opaque type ${a.name} = ${renderType(underlying)}")
   if a.values.nonEmpty then
-    line(s"object ${a.name} extends $impl[${a.name}]:")
+    line(s"object ${a.name} extends $impl[${a.name}]$customValues:")
     nest {
       val rendered = List.newBuilder[String]
       a.values.filter(!_.proposed).foreach { entry =>

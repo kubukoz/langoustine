@@ -25,7 +25,7 @@ import scala.annotation.switch
 /** Predefined error codes.
   */
 opaque type ErrorCodes = Int
-object ErrorCodes extends IntEnum[ErrorCodes]:
+object ErrorCodes extends IntEnum[ErrorCodes] with CustomIntValues[ErrorCodes]:
   val ParseError     = entry(-32700)
   val InvalidRequest = entry(-32600)
   val MethodNotFound = entry(-32601)

@@ -23,7 +23,9 @@ import scala.reflect.Typeable
 import scala.annotation.switch
 
 opaque type LSPErrorCodes = Int
-object LSPErrorCodes extends IntEnum[LSPErrorCodes]:
+object LSPErrorCodes
+    extends IntEnum[LSPErrorCodes]
+    with CustomIntValues[LSPErrorCodes]:
   /** A request failed but it was syntactically correct, e.g the method name was
     * known and the parameters were valid. The error message should contain
     * human readable information about why the request failed.

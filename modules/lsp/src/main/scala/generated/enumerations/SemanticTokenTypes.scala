@@ -28,7 +28,9 @@ import scala.annotation.switch
   * @since 3.16.0
   */
 opaque type SemanticTokenTypes = String
-object SemanticTokenTypes extends StringEnum[SemanticTokenTypes]:
+object SemanticTokenTypes
+    extends StringEnum[SemanticTokenTypes]
+    with CustomStringValues[SemanticTokenTypes]:
   val namespace = entry("namespace")
 
   /** Represents a generic type. Acts as a fallback for types which can't be
