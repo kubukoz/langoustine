@@ -383,8 +383,8 @@ object textDocument:
 
   /** A request to list all presentation for a color. The request's parameter is
     * of type {@link ColorPresentationParams} the response is of type
-    * {@link ColorInformation ColorInformation[]} or a Thenable that resolves to
-    * such.
+    * {@link ColorPresentation ColorPresentation[]} or a Thenable that resolves
+    * to such.
     */
   object colorPresentation
       extends LSPRequest("textDocument/colorPresentation")
@@ -655,6 +655,27 @@ object textDocument:
         in: structures.InlayHintParams
     ): PreparedRequest[this.type] = super.apply(in)
 
+  /** A request to provide inline completions in a document. The request's
+    * parameter is of type {@link InlineCompletionParams}, the response is of
+    * type {@link InlineCompletion InlineCompletion[]} or a Thenable that
+    * resolves to such.
+    *
+    * since 3.18.0
+    */
+  object inlineCompletion
+      extends LSPRequest("textDocument/inlineCompletion")
+      with codecs.requests_textDocument_inlineCompletion:
+    type In  = structures.InlineCompletionParams
+    type Out = Option[
+      (structures.InlineCompletionList |
+        Vector[structures.InlineCompletionItem])
+    ]
+
+    override def apply(
+        in: structures.InlineCompletionParams
+    ): PreparedRequest[this.type] = super.apply(in)
+  end inlineCompletion
+
   /** A request to provide inline values in a document. The request's parameter
     * is of type {@link InlineValueParams}, the response is of type
     * {@link InlineValue InlineValue[]} or a Thenable that resolves to such.
@@ -780,6 +801,20 @@ object textDocument:
 
     override def apply(
         in: structures.DocumentRangeFormattingParams
+    ): PreparedRequest[this.type] = super.apply(in)
+
+  /** A request to format ranges in a document.
+    *
+    * since 3.18.0
+    */
+  object rangesFormatting
+      extends LSPRequest("textDocument/rangesFormatting")
+      with codecs.requests_textDocument_rangesFormatting:
+    type In  = structures.DocumentRangesFormattingParams
+    type Out = Option[Vector[structures.TextEdit]]
+
+    override def apply(
+        in: structures.DocumentRangesFormattingParams
     ): PreparedRequest[this.type] = super.apply(in)
 
   /** A request to resolve project-wide references for the symbol denoted by the
@@ -1064,7 +1099,7 @@ object workspace:
   /** The 'workspace/configuration' request is sent from the server to the
     * client to fetch a certain configuration setting.
     *
-    * This pull model replaces the old push model where the client signaled
+    * This pull model replaces the old push model were the client signaled
     * configuration change via an event. If the server still needs to react to
     * configuration changes (since the server caches the result of
     * `workspace/configuration` requests) the server should register for an
@@ -1202,6 +1237,20 @@ object workspace:
         in: structures.ExecuteCommandParams
     ): PreparedRequest[this.type] = super.apply(in)
 
+  object foldingRange:
+    /** A request to refresh the folding ranges in a document.
+      *
+      * since 3.18.0
+      */
+    object refresh
+        extends LSPRequest("workspace/foldingRange/refresh")
+        with codecs.requests_workspace_foldingRange_refresh:
+      type In  = Unit
+      type Out = Null
+
+      override def apply(in: Unit): PreparedRequest[this.type] = super.apply(in)
+  end foldingRange
+
   object inlayHint:
     /** since 3.17.0
       */
@@ -1260,6 +1309,37 @@ object workspace:
         in: structures.WorkspaceSymbolParams
     ): PreparedRequest[this.type] = super.apply(in)
   end symbol
+
+  /** The `workspace/textDocumentContent` request is sent from the client to the
+    * server to request the content of a text document.
+    *
+    * since 3.18.0
+    */
+  object textDocumentContent
+      extends LSPRequest("workspace/textDocumentContent")
+      with codecs.requests_workspace_textDocumentContent:
+    type In  = structures.TextDocumentContentParams
+    type Out = structures.TextDocumentContentResult
+
+    override def apply(
+        in: structures.TextDocumentContentParams
+    ): PreparedRequest[this.type] = super.apply(in)
+
+    /** The `workspace/textDocumentContent` request is sent from the server to
+      * the client to refresh the content of a specific text document.
+      *
+      * since 3.18.0
+      */
+    object refresh
+        extends LSPRequest("workspace/textDocumentContent/refresh")
+        with codecs.requests_workspace_textDocumentContent_refresh:
+      type In  = structures.TextDocumentContentRefreshParams
+      type Out = Null
+
+      override def apply(
+          in: structures.TextDocumentContentRefreshParams
+      ): PreparedRequest[this.type] = super.apply(in)
+  end textDocumentContent
 
   /** The will create files request is sent from the client to the server before
     * files are actually created as long as the creation is triggered from

@@ -28,8 +28,9 @@ import runtime.{*, given}
   *   The range at which the message applies
   *
   * @param severity
-  *   The diagnostic's severity. Can be omitted. If omitted it is up to the
-  *   client to interpret diagnostics as error, warning, info or hint.
+  *   The diagnostic's severity. To avoid interpretation mismatches when a
+  *   server is used with different clients it is highly recommended that
+  *   servers always provide a severity value.
   *
   * @param code
   *   The diagnostic's code, which usually appear in the user interface.
@@ -45,7 +46,10 @@ import runtime.{*, given}
   *   'typescript' or 'super lint'. It usually appears in the user interface.
   *
   * @param message
-  *   The diagnostic's message. It usually appears in the user interface
+  *   The diagnostic's message. It usually appears in the user interface.
+  *
+  * since 3.18.0 - support for MarkupContent. This is guarded by the client
+  * capability `textDocument.diagnostic.markupMessageSupport`.
   *
   * @param tags
   *   Additional metadata about the diagnostic.
@@ -69,7 +73,7 @@ case class Diagnostic(
     code: Option[(Int | String)] = None,
     codeDescription: Option[structures.CodeDescription] = None,
     source: Option[String] = None,
-    message: String,
+    message: (String | structures.MarkupContent),
     tags: Option[Vector[enumerations.DiagnosticTag]] = None,
     relatedInformation: Option[
       Vector[structures.DiagnosticRelatedInformation]

@@ -26,9 +26,15 @@ import runtime.{*, given}
   * @param documentSelector
   *   A document selector to identify the scope of the registration. If set to
   *   null the document selector provided on the client side will be used.
+  *
+  * @param rangesSupport
+  *   Whether the server supports formatting multiple ranges at once.
+  *
+  * since 3.18.0
   */
 case class DocumentRangeFormattingRegistrationOptions(
-    documentSelector: Option[aliases.DocumentSelector] = None
+    documentSelector: Option[aliases.DocumentSelector] = None,
+    rangesSupport: Option[Boolean] = None
 )
 object DocumentRangeFormattingRegistrationOptions
     extends codecs.structures_DocumentRangeFormattingRegistrationOptionsCodec

@@ -44,7 +44,7 @@ import runtime.{*, given}
   *   defined, defaults to the length of the end line.
   *
   * @param kind
-  *   Describes the kind of the folding range such as `comment' or 'region'. The
+  *   Describes the kind of the folding range such as 'comment' or 'region'. The
   *   kind is used to categorize folding ranges and used by commands like 'Fold
   *   all comments'. See {@link FoldingRangeKind} for an enumeration of
   *   standardized kinds.

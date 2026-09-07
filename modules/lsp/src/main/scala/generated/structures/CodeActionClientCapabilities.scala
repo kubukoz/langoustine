@@ -62,46 +62,30 @@ import runtime.{*, given}
   *   confirmation.
   *
   * since 3.16.0
+  *
+  * @param documentationSupport
+  *   Whether the client supports documentation for a class of code actions.
+  *
+  * since 3.18.0
+  *
+  * @param tagSupport
+  *   Client supports the tag property on a code action. Clients supporting tags
+  *   have to handle unknown tags gracefully.
+  *
+  * since 3.18.0
   */
 case class CodeActionClientCapabilities(
     dynamicRegistration: Option[Boolean] = None,
     codeActionLiteralSupport: Option[
-      CodeActionClientCapabilities.CodeActionLiteralSupport
+      structures.ClientCodeActionLiteralOptions
     ] = None,
     isPreferredSupport: Option[Boolean] = None,
     disabledSupport: Option[Boolean] = None,
     dataSupport: Option[Boolean] = None,
-    resolveSupport: Option[CodeActionClientCapabilities.ResolveSupport] = None,
-    honorsChangeAnnotations: Option[Boolean] = None
+    resolveSupport: Option[structures.ClientCodeActionResolveOptions] = None,
+    honorsChangeAnnotations: Option[Boolean] = None,
+    documentationSupport: Option[Boolean] = None,
+    tagSupport: Option[structures.CodeActionTagOptions] = None
 )
 object CodeActionClientCapabilities
-    extends codecs.structures_CodeActionClientCapabilitiesCodec:
-  /** @param codeActionKind
-    *   The code action kind is support with the following value set.
-    */
-  case class CodeActionLiteralSupport(
-      codeActionKind: CodeActionLiteralSupport.CodeActionKind
-  )
-  object CodeActionLiteralSupport
-      extends codecs.structures_CodeActionClientCapabilities_CodeActionLiteralSupportCodec:
-    /** @param valueSet
-      *   The code action kind values the client supports. When this property
-      *   exists the client also guarantees that it will handle values outside
-      *   its set gracefully and falls back to a default value when unknown.
-      */
-    case class CodeActionKind(
-        valueSet: Vector[enumerations.CodeActionKind]
-    )
-    object CodeActionKind
-        extends codecs.structures_CodeActionClientCapabilities_CodeActionLiteralSupport_CodeActionKindCodec
-  end CodeActionLiteralSupport
-
-  /** @param properties
-    *   The properties that a client can resolve lazily.
-    */
-  case class ResolveSupport(
-      properties: Vector[String]
-  )
-  object ResolveSupport
-      extends codecs.structures_CodeActionClientCapabilities_ResolveSupportCodec
-end CodeActionClientCapabilities
+    extends codecs.structures_CodeActionClientCapabilitiesCodec

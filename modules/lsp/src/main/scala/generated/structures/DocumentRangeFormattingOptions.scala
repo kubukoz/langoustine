@@ -23,9 +23,15 @@ import runtime.{*, given}
 
 /** Provider options for a {@link DocumentRangeFormattingRequest}.
   *
+  * @param rangesSupport
+  *   Whether the server supports formatting multiple ranges at once.
+  *
+  * since 3.18.0
+  *
   * @param workDoneProgress
   */
 case class DocumentRangeFormattingOptions(
+    rangesSupport: Option[Boolean] = None,
     workDoneProgress: Option[Boolean] = None
 )
 object DocumentRangeFormattingOptions

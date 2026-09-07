@@ -51,32 +51,8 @@ case class FoldingRangeClientCapabilities(
     dynamicRegistration: Option[Boolean] = None,
     rangeLimit: Option[runtime.uinteger] = None,
     lineFoldingOnly: Option[Boolean] = None,
-    foldingRangeKind: Option[FoldingRangeClientCapabilities.FoldingRangeKind] =
-      None,
-    foldingRange: Option[FoldingRangeClientCapabilities.FoldingRange] = None
+    foldingRangeKind: Option[structures.ClientFoldingRangeKindOptions] = None,
+    foldingRange: Option[structures.ClientFoldingRangeOptions] = None
 )
 object FoldingRangeClientCapabilities
-    extends codecs.structures_FoldingRangeClientCapabilitiesCodec:
-  /** @param valueSet
-    *   The folding range kind values the client supports. When this property
-    *   exists the client also guarantees that it will handle values outside its
-    *   set gracefully and falls back to a default value when unknown.
-    */
-  case class FoldingRangeKind(
-      valueSet: Option[Vector[enumerations.FoldingRangeKind]] = None
-  )
-  object FoldingRangeKind
-      extends codecs.structures_FoldingRangeClientCapabilities_FoldingRangeKindCodec
-
-  /** @param collapsedText
-    *   If set, the client signals that it supports setting collapsedText on
-    *   folding ranges to display custom labels instead of the default text.
-    *
-    * since 3.17.0
-    */
-  case class FoldingRange(
-      collapsedText: Option[Boolean] = None
-  )
-  object FoldingRange
-      extends codecs.structures_FoldingRangeClientCapabilities_FoldingRangeCodec
-end FoldingRangeClientCapabilities
+    extends codecs.structures_FoldingRangeClientCapabilitiesCodec

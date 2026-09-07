@@ -48,33 +48,10 @@ import runtime.{*, given}
   */
 case class DocumentSymbolClientCapabilities(
     dynamicRegistration: Option[Boolean] = None,
-    symbolKind: Option[DocumentSymbolClientCapabilities.SymbolKind] = None,
+    symbolKind: Option[structures.ClientSymbolKindOptions] = None,
     hierarchicalDocumentSymbolSupport: Option[Boolean] = None,
-    tagSupport: Option[DocumentSymbolClientCapabilities.TagSupport] = None,
+    tagSupport: Option[structures.ClientSymbolTagOptions] = None,
     labelSupport: Option[Boolean] = None
 )
 object DocumentSymbolClientCapabilities
-    extends codecs.structures_DocumentSymbolClientCapabilitiesCodec:
-  /** @param valueSet
-    *   The symbol kind values the client supports. When this property exists
-    *   the client also guarantees that it will handle values outside its set
-    *   gracefully and falls back to a default value when unknown.
-    *
-    * If this property is not present the client only supports the symbol kinds
-    * from `File` to `Array` as defined in the initial version of the protocol.
-    */
-  case class SymbolKind(
-      valueSet: Option[Vector[enumerations.SymbolKind]] = None
-  )
-  object SymbolKind
-      extends codecs.structures_DocumentSymbolClientCapabilities_SymbolKindCodec
-
-  /** @param valueSet
-    *   The tags supported by the client.
-    */
-  case class TagSupport(
-      valueSet: Vector[enumerations.SymbolTag]
-  )
-  object TagSupport
-      extends codecs.structures_DocumentSymbolClientCapabilities_TagSupportCodec
-end DocumentSymbolClientCapabilities
+    extends codecs.structures_DocumentSymbolClientCapabilitiesCodec

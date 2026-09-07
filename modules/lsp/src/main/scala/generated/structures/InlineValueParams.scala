@@ -29,11 +29,11 @@ import runtime.{*, given}
   *   The text document.
   *
   * @param range
-  *   The document range for which inline values should be computed.
+  *   The document range for which inline values information will be returned.
   *
   * @param context
-  *   Additional information about the context in which inline values were
-  *   requested.
+  *   Additional information about the context in which inline values
+  *   information was requested.
   *
   * @param workDoneToken
   *   An optional token that a server can use to report work done progress.

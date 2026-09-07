@@ -22,7 +22,7 @@ import enumerations.*
 import SemanticTokensEncoder.Error
 
 // This encoder logic comes from
-// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_semanticTokens
+// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_semanticTokens
 class SemanticTokensEncoder private (
     tokensIndex: Map[enumerations.SemanticTokenTypes, Int],
     modifiersIndex: Map[enumerations.SemanticTokenModifiers, Int]

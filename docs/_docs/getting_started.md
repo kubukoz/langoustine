@@ -31,10 +31,10 @@ The LSP will be very simple:
 
 1. Only operates on files with `.langoustine` extension (this will become important only for editor integration)
 
-2. It should send a window notification ([`window/showMessage`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#window_showMessage) when the server start processing a response to [initialize](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initialize) 
+2. It should send a window notification ([`window/showMessage`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#window_showMessage) when the server start processing a response to [initialize](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#initialize) 
 request 
 
-3. Whenever a document is opened ([`textDocument/didOpen`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_didOpen), we should track the full path of it in some in-memory state
+3. Whenever a document is opened ([`textDocument/didOpen`](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_didOpen), we should track the full path of it in some in-memory state
 
    a. Once the document is persisted in memory, we should send a window notification with the total count of currently
       tracked documents
@@ -74,7 +74,7 @@ def myLSP(files: Ref[IO, Set[String]]) =
             capabilities = ServerCapabilities(textDocumentSync =
               Some(TextDocumentSyncKind.Full)
             ),
-            serverInfo = Some(InitializeResult.ServerInfo("My first LSP!"))
+            serverInfo = Some(ServerInfo("My first LSP!"))
           )
         }
     }
@@ -151,7 +151,7 @@ def myFutureLSP(
           capabilities = ServerCapabilities(textDocumentSync =
             Some(TextDocumentSyncKind.Full)
           ),
-          serverInfo = Some(InitializeResult.ServerInfo("My first LSP!"))
+          serverInfo = Some(ServerInfo("My first LSP!"))
         )
       }
     }

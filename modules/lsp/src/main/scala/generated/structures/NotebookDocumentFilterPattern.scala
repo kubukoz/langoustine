@@ -14,30 +14,30 @@
  * limitations under the License.
  */
 
+// format:off
 package langoustine.lsp
-package enumerations
+package structures
 
+import langoustine.*
 import runtime.{*, given}
-import io.circe.*
-import scala.reflect.Typeable
-import scala.annotation.switch
 
-opaque type TraceValues = String
-object TraceValues extends StringEnum[TraceValues]:
-  /** Turn tracing off.
-    */
-  val Off = entry("off")
-
-  /** Trace messages only.
-    */
-  val Messages = entry("messages")
-
-  /** Verbose message tracing.
-    */
-  val Verbose      = entry("verbose")
-  override def ALL = Set(
-    Off,
-    Messages,
-    Verbose
-  )
-end TraceValues
+/** A notebook document filter where `pattern` is required field.
+  *
+  * @since 3.18.0
+  *
+  * @param notebookType
+  *   The type of the enclosing notebook.
+  *
+  * @param scheme
+  *   A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
+  *
+  * @param pattern
+  *   A glob pattern.
+  */
+case class NotebookDocumentFilterPattern(
+    notebookType: Option[String] = None,
+    scheme: Option[String] = None,
+    pattern: aliases.GlobPattern
+)
+object NotebookDocumentFilterPattern
+    extends codecs.structures_NotebookDocumentFilterPatternCodec

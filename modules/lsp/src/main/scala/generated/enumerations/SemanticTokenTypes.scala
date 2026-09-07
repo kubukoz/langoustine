@@ -60,7 +60,11 @@ object SemanticTokenTypes
 
   /** @since 3.17.0
     */
-  val decorator    = entry("decorator")
+  val decorator = entry("decorator")
+
+  /** @since 3.18.0
+    */
+  val label        = entry("label")
   override def ALL = Set(
     namespace,
     `type`,
@@ -84,6 +88,7 @@ object SemanticTokenTypes
     number,
     regexp,
     operator,
-    decorator
+    decorator,
+    label
   )
 end SemanticTokenTypes

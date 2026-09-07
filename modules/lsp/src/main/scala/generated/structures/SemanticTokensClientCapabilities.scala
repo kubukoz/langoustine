@@ -73,7 +73,7 @@ import runtime.{*, given}
   */
 case class SemanticTokensClientCapabilities(
     dynamicRegistration: Option[Boolean] = None,
-    requests: SemanticTokensClientCapabilities.Requests,
+    requests: structures.ClientSemanticTokensRequestOptions,
     tokenTypes: Vector[String],
     tokenModifiers: Vector[String],
     formats: Vector[enumerations.TokenFormat],
@@ -83,34 +83,4 @@ case class SemanticTokensClientCapabilities(
     augmentsSyntaxTokens: Option[Boolean] = None
 )
 object SemanticTokensClientCapabilities
-    extends codecs.structures_SemanticTokensClientCapabilitiesCodec:
-  /** @param range
-    *   The client will send the `textDocument/semanticTokens/range` request if
-    *   the server provides a corresponding handler.
-    *
-    * @param full
-    *   The client will send the `textDocument/semanticTokens/full` request if
-    *   the server provides a corresponding handler.
-    */
-  case class Requests(
-      range: Option[(Boolean | Requests.S0)] = None,
-      full: Option[(Boolean | Requests.S1)] = None
-  )
-  object Requests
-      extends codecs.structures_SemanticTokensClientCapabilities_RequestsCodec:
-    case class S0(
-    )
-    object S0
-        extends codecs.structures_SemanticTokensClientCapabilities_Requests_S0Codec
-
-    /** @param delta
-      *   The client will send the `textDocument/semanticTokens/full/delta`
-      *   request if the server provides a corresponding handler.
-      */
-    case class S1(
-        delta: Option[Boolean] = None
-    )
-    object S1
-        extends codecs.structures_SemanticTokensClientCapabilities_Requests_S1Codec
-  end Requests
-end SemanticTokensClientCapabilities
+    extends codecs.structures_SemanticTokensClientCapabilitiesCodec

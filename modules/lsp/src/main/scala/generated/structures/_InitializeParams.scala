@@ -70,25 +70,13 @@ import runtime.{*, given}
   */
 case class _InitializeParams(
     processId: Option[Int] = None,
-    clientInfo: Option[_InitializeParams.ClientInfo] = None,
+    clientInfo: Option[structures.ClientInfo] = None,
     locale: Option[String] = None,
     rootPath: Option[String] = None,
     rootUri: Option[runtime.DocumentUri] = None,
     capabilities: structures.ClientCapabilities,
     initializationOptions: Option[io.circe.Json] = None,
-    trace: Option[enumerations.TraceValues] = None,
+    trace: Option[enumerations.TraceValue] = None,
     workDoneToken: Option[aliases.ProgressToken] = None
 )
-object _InitializeParams extends codecs.structures__InitializeParamsCodec:
-  /** @param name
-    *   The name of the client as defined by the client.
-    *
-    * @param version
-    *   The client's version as defined by the client.
-    */
-  case class ClientInfo(
-      name: String,
-      version: Option[String] = None
-  )
-  object ClientInfo extends codecs.structures__InitializeParams_ClientInfoCodec
-end _InitializeParams
+object _InitializeParams extends codecs.structures__InitializeParamsCodec

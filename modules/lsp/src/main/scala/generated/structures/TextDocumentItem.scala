@@ -38,7 +38,7 @@ import runtime.{*, given}
   */
 case class TextDocumentItem(
     uri: runtime.DocumentUri,
-    languageId: String,
+    languageId: enumerations.LanguageKind,
     version: Int,
     text: String
 )

@@ -39,12 +39,25 @@ import runtime.{*, given}
   * better express this.
   *
   * @param activeParameter
-  *   The active parameter of the active signature. If omitted or the value lies
-  *   outside the range of `signatures[activeSignature].parameters` defaults to
-  *   0 if the active signature has parameters. If the active signature has no
-  *   parameters it is ignored. In future version of the protocol this property
-  *   might become mandatory to better express the active parameter if the
-  *   active signature does have any.
+  *   The active parameter of the active signature.
+  *
+  * If `null`, no parameter of the signature is active (for example a named
+  * argument that does not match any declared parameters). This is only valid if
+  * the client specifies the client capability
+  * `textDocument.signatureHelp.noActiveParameterSupport === true`
+  *
+  * If omitted or the value lies outside the range of
+  * `signatures[activeSignature].parameters` defaults to 0 if the active
+  * signature has parameters.
+  *
+  * If the active signature has no parameters it is ignored.
+  *
+  * In future version of the protocol this property might become mandatory (but
+  * still nullable) to better express the active parameter if the active
+  * signature does have any.
+  *
+  * Since version 3.16.0 the `SignatureInformation` itself provides a
+  * `activeParameter` property and it should be used instead of this one.
   */
 case class SignatureHelp(
     signatures: Vector[structures.SignatureInformation],

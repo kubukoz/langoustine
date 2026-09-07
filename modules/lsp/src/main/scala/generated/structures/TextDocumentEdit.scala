@@ -35,9 +35,15 @@ import runtime.{*, given}
   *
   * since 3.16.0 - support for AnnotatedTextEdit. This is guarded using a client
   * capability.
+  *
+  * since 3.18.0 - support for SnippetTextEdit. This is guarded using a client
+  * capability.
   */
 case class TextDocumentEdit(
     textDocument: structures.OptionalVersionedTextDocumentIdentifier,
-    edits: Vector[(structures.TextEdit | structures.AnnotatedTextEdit)]
+    edits: Vector[
+      (structures.TextEdit | structures.AnnotatedTextEdit |
+        structures.SnippetTextEdit)
+    ]
 )
 object TextDocumentEdit extends codecs.structures_TextDocumentEditCodec

@@ -48,6 +48,16 @@ import runtime.{*, given}
   *   create file, rename file and delete file changes.
   *
   * since 3.16.0
+  *
+  * @param metadataSupport
+  *   Whether the client supports `WorkspaceEditMetadata` in `WorkspaceEdit`s.
+  *
+  * since 3.18.0
+  *
+  * @param snippetEditSupport
+  *   Whether the client supports snippets as text edits.
+  *
+  * since 3.18.0
   */
 case class WorkspaceEditClientCapabilities(
     documentChanges: Option[Boolean] = None,
@@ -56,19 +66,10 @@ case class WorkspaceEditClientCapabilities(
     failureHandling: Option[enumerations.FailureHandlingKind] = None,
     normalizesLineEndings: Option[Boolean] = None,
     changeAnnotationSupport: Option[
-      WorkspaceEditClientCapabilities.ChangeAnnotationSupport
-    ] = None
+      structures.ChangeAnnotationsSupportOptions
+    ] = None,
+    metadataSupport: Option[Boolean] = None,
+    snippetEditSupport: Option[Boolean] = None
 )
 object WorkspaceEditClientCapabilities
-    extends codecs.structures_WorkspaceEditClientCapabilitiesCodec:
-  /** @param groupsOnLabel
-    *   Whether the client groups edits with equal labels into tree nodes, for
-    *   instance all edits labelled with "Changes in Strings" would be a tree
-    *   node.
-    */
-  case class ChangeAnnotationSupport(
-      groupsOnLabel: Option[Boolean] = None
-  )
-  object ChangeAnnotationSupport
-      extends codecs.structures_WorkspaceEditClientCapabilities_ChangeAnnotationSupportCodec
-end WorkspaceEditClientCapabilities
+    extends codecs.structures_WorkspaceEditClientCapabilitiesCodec

@@ -74,7 +74,7 @@ object EndToEndTests extends SimpleIOSuite:
       DidOpenTextDocumentParams(
         textDocument = TextDocumentItem(
           uri = DocumentUri("howdy"),
-          languageId = "markdown",
+          languageId = LanguageKind.Markdown,
           version = 1,
           text = "blabla"
         )
@@ -86,7 +86,7 @@ object EndToEndTests extends SimpleIOSuite:
       DidOpenTextDocumentParams(
         textDocument = TextDocumentItem(
           uri = DocumentUri("howdy1"),
-          languageId = "markdown",
+          languageId = LanguageKind.Markdown,
           version = 1,
           text = "blabla"
         )
@@ -150,7 +150,7 @@ object EndToEndTests extends SimpleIOSuite:
                 capabilities = ServerCapabilities(textDocumentSync =
                   Some(TextDocumentSyncKind.Full)
                 ),
-                serverInfo = Some(InitializeResult.ServerInfo("My first LSP!"))
+                serverInfo = Some(ServerInfo("My first LSP!"))
               )
             )
           )

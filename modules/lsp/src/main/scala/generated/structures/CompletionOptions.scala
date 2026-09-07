@@ -61,20 +61,7 @@ case class CompletionOptions(
     triggerCharacters: Option[Vector[String]] = None,
     allCommitCharacters: Option[Vector[String]] = None,
     resolveProvider: Option[Boolean] = None,
-    completionItem: Option[CompletionOptions.CompletionItem] = None,
+    completionItem: Option[structures.ServerCompletionItemOptions] = None,
     workDoneProgress: Option[Boolean] = None
 )
-object CompletionOptions extends codecs.structures_CompletionOptionsCodec:
-  /** @param labelDetailsSupport
-    *   The server has support for completion item label details (see also
-    *   `CompletionItemLabelDetails`) when receiving a completion item in a
-    *   resolve call.
-    *
-    * since 3.17.0
-    */
-  case class CompletionItem(
-      labelDetailsSupport: Option[Boolean] = None
-  )
-  object CompletionItem
-      extends codecs.structures_CompletionOptions_CompletionItemCodec
-end CompletionOptions
+object CompletionOptions extends codecs.structures_CompletionOptionsCodec

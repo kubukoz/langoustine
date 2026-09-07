@@ -28,6 +28,11 @@ import runtime.{*, given}
   * @param title
   *   Title of the command, like `save`.
   *
+  * @param tooltip
+  *   An optional tooltip.
+  *
+  * since 3.18.0
+  *
   * @param command
   *   The identifier of the actual command handler.
   *
@@ -36,6 +41,7 @@ import runtime.{*, given}
   */
 case class Command(
     title: String,
+    tooltip: Option[String] = None,
     command: String,
     arguments: Option[Vector[io.circe.Json]] = None
 )

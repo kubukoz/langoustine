@@ -30,74 +30,40 @@ import scala.reflect.*
   * @since 3.17.0
   */
 opaque type NotebookDocumentFilter =
-  (NotebookDocumentFilter.S0 | NotebookDocumentFilter.S1 |
-    NotebookDocumentFilter.S2)
+  (structures.NotebookDocumentFilterNotebookType |
+    structures.NotebookDocumentFilterScheme |
+    structures.NotebookDocumentFilterPattern)
 object NotebookDocumentFilter extends codecs.aliases_NotebookDocumentFilter:
-  inline def apply(v: NotebookDocumentFilter.S0): NotebookDocumentFilter = v
-  inline def apply(v: NotebookDocumentFilter.S1): NotebookDocumentFilter = v
-  inline def apply(v: NotebookDocumentFilter.S2): NotebookDocumentFilter = v
+  inline def apply(
+      v: structures.NotebookDocumentFilterNotebookType
+  ): NotebookDocumentFilter = v
+  inline def apply(
+      v: structures.NotebookDocumentFilterScheme
+  ): NotebookDocumentFilter = v
+  inline def apply(
+      v: structures.NotebookDocumentFilterPattern
+  ): NotebookDocumentFilter = v
 
   extension (v: NotebookDocumentFilter)
-    inline def value: (NotebookDocumentFilter.S0 | NotebookDocumentFilter.S1 |
-      NotebookDocumentFilter.S2) = v
+    inline def value: (structures.NotebookDocumentFilterNotebookType |
+      structures.NotebookDocumentFilterScheme |
+      structures.NotebookDocumentFilterPattern) = v
 
   given Typeable[NotebookDocumentFilter] with
     def unapply(s: Any): Option[s.type & NotebookDocumentFilter] =
       s match
-        case c: NotebookDocumentFilter.S0 =>
-          Some(c.asInstanceOf[s.type & NotebookDocumentFilter.S0])
-        case c: NotebookDocumentFilter.S1 =>
-          Some(c.asInstanceOf[s.type & NotebookDocumentFilter.S1])
-        case c: NotebookDocumentFilter.S2 =>
-          Some(c.asInstanceOf[s.type & NotebookDocumentFilter.S2])
+        case c: structures.NotebookDocumentFilterNotebookType =>
+          Some(
+            c.asInstanceOf[
+              s.type & structures.NotebookDocumentFilterNotebookType
+            ]
+          )
+        case c: structures.NotebookDocumentFilterScheme =>
+          Some(c.asInstanceOf[s.type & structures.NotebookDocumentFilterScheme])
+        case c: structures.NotebookDocumentFilterPattern =>
+          Some(
+            c.asInstanceOf[s.type & structures.NotebookDocumentFilterPattern]
+          )
         case _ => Option.empty
   end given
-
-  /** @param notebookType
-    *   The type of the enclosing notebook.
-    *
-    * @param scheme
-    *   A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-    *
-    * @param pattern
-    *   A glob pattern.
-    */
-  case class S0(
-      notebookType: String,
-      scheme: Option[String] = None,
-      pattern: Option[String] = None
-  )
-  object S0 extends codecs.aliases_NotebookDocumentFilter_S0Codec
-
-  /** @param notebookType
-    *   The type of the enclosing notebook.
-    *
-    * @param scheme
-    *   A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-    *
-    * @param pattern
-    *   A glob pattern.
-    */
-  case class S1(
-      notebookType: Option[String] = None,
-      scheme: String,
-      pattern: Option[String] = None
-  )
-  object S1 extends codecs.aliases_NotebookDocumentFilter_S1Codec
-
-  /** @param notebookType
-    *   The type of the enclosing notebook.
-    *
-    * @param scheme
-    *   A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-    *
-    * @param pattern
-    *   A glob pattern.
-    */
-  case class S2(
-      notebookType: Option[String] = None,
-      scheme: Option[String] = None,
-      pattern: String
-  )
-  object S2 extends codecs.aliases_NotebookDocumentFilter_S2Codec
 end NotebookDocumentFilter

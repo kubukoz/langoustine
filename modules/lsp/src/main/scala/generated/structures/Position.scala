@@ -52,17 +52,11 @@ import runtime.{*, given}
   *  @param line
   *    Line position in a document (zero-based).
   *
-  *    If a line number is greater than the number of lines in a document, it defaults back to the number of lines in the document.
-  *    If a line number is negative, it defaults to 0.
-  *
   *  @param character
   *    Character offset on a line in a document (zero-based).
   *
   *    The meaning of this offset is determined by the negotiated
   *    `PositionEncodingKind`.
-  *
-  *    If the character value is greater than the line length it defaults back to the
-  *    line length.
   */
 case class Position(
     line: runtime.uinteger,

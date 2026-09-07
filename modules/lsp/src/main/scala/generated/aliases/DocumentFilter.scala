@@ -26,7 +26,7 @@ import scala.reflect.*
 /**  A document filter describes a top level text document or
   *  a notebook cell document.
   *
-  *  @since 3.17.0 - proposed support for NotebookCellTextDocumentFilter.
+  *  @since 3.17.0 - support for NotebookCellTextDocumentFilter.
   */
 opaque type DocumentFilter =
   (aliases.TextDocumentFilter | structures.NotebookCellTextDocumentFilter)

@@ -41,43 +41,10 @@ import runtime.{*, given}
   */
 case class NotebookDocumentSyncOptions(
     notebookSelector: Vector[
-      (NotebookDocumentSyncOptions.S0 | NotebookDocumentSyncOptions.S1)
+      (structures.NotebookDocumentFilterWithNotebook |
+        structures.NotebookDocumentFilterWithCells)
     ],
     save: Option[Boolean] = None
 )
 object NotebookDocumentSyncOptions
-    extends codecs.structures_NotebookDocumentSyncOptionsCodec:
-  /** @param notebook
-    *   The notebook to be synced If a string value is provided it matches
-    *   against the notebook type. '*' matches every notebook.
-    *
-    * @param cells
-    *   The cells of the matching notebook to be synced.
-    */
-  case class S0(
-      notebook: (String | aliases.NotebookDocumentFilter),
-      cells: Option[Vector[S0.S0]] = None
-  )
-  object S0 extends codecs.structures_NotebookDocumentSyncOptions_S0Codec:
-    case class S0(
-        language: String
-    )
-    object S0 extends codecs.structures_NotebookDocumentSyncOptions_S0_S0Codec
-
-  /** @param notebook
-    *   The notebook to be synced If a string value is provided it matches
-    *   against the notebook type. '*' matches every notebook.
-    *
-    * @param cells
-    *   The cells of the matching notebook to be synced.
-    */
-  case class S1(
-      notebook: Option[(String | aliases.NotebookDocumentFilter)] = None,
-      cells: Vector[S1.S0]
-  )
-  object S1 extends codecs.structures_NotebookDocumentSyncOptions_S1Codec:
-    case class S0(
-        language: String
-    )
-    object S0 extends codecs.structures_NotebookDocumentSyncOptions_S1_S0Codec
-end NotebookDocumentSyncOptions
+    extends codecs.structures_NotebookDocumentSyncOptionsCodec

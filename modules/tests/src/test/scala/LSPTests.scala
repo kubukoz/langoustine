@@ -25,8 +25,8 @@ import jsonrpclib.fs2.catsMonadic
 import jsonrpclib.{fs2 as _, *}
 import langoustine.lsp.*
 import langoustine.lsp.all.*
-import langoustine.lsp.structures.InitializeParams.ClientInfo
-import langoustine.lsp.structures.InitializeResult.ServerInfo
+import langoustine.lsp.structures.ClientInfo
+import langoustine.lsp.structures.ServerInfo
 import cats.syntax.all.*
 
 object LSPTests extends weaver.SimpleIOSuite:
@@ -114,7 +114,7 @@ object LSPTests extends weaver.SimpleIOSuite:
             DidOpenTextDocumentParams(
               TextDocumentItem(
                 uri = DocumentUri("/home/bla.txt"),
-                languageId = "text",
+                languageId = LanguageKind("text"),
                 version = 0,
                 text = "Hello!"
               )

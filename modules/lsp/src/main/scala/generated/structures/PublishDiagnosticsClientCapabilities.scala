@@ -23,18 +23,18 @@ import runtime.{*, given}
 
 /** The publish diagnostic client capabilities.
   *
+  * @param versionSupport
+  *   Whether the client interprets the version property of the
+  *   `textDocument/publishDiagnostics` notification's parameter.
+  *
+  * since 3.15.0
+  *
   * @param relatedInformation
   *   Whether the clients accepts diagnostics with related information.
   *
   * @param tagSupport
   *   Client supports the tag property to provide meta data about a diagnostic.
   *   Clients supporting tags have to handle unknown tags gracefully.
-  *
-  * since 3.15.0
-  *
-  * @param versionSupport
-  *   Whether the client interprets the version property of the
-  *   `textDocument/publishDiagnostics` notification's parameter.
   *
   * since 3.15.0
   *
@@ -51,20 +51,11 @@ import runtime.{*, given}
   * since 3.16.0
   */
 case class PublishDiagnosticsClientCapabilities(
-    relatedInformation: Option[Boolean] = None,
-    tagSupport: Option[PublishDiagnosticsClientCapabilities.TagSupport] = None,
     versionSupport: Option[Boolean] = None,
+    relatedInformation: Option[Boolean] = None,
+    tagSupport: Option[structures.ClientDiagnosticsTagOptions] = None,
     codeDescriptionSupport: Option[Boolean] = None,
     dataSupport: Option[Boolean] = None
 )
 object PublishDiagnosticsClientCapabilities
-    extends codecs.structures_PublishDiagnosticsClientCapabilitiesCodec:
-  /** @param valueSet
-    *   The tags supported by the client.
-    */
-  case class TagSupport(
-      valueSet: Vector[enumerations.DiagnosticTag]
-  )
-  object TagSupport
-      extends codecs.structures_PublishDiagnosticsClientCapabilities_TagSupportCodec
-end PublishDiagnosticsClientCapabilities
+    extends codecs.structures_PublishDiagnosticsClientCapabilitiesCodec

@@ -45,43 +45,9 @@ import runtime.{*, given}
   */
 case class WorkspaceSymbolClientCapabilities(
     dynamicRegistration: Option[Boolean] = None,
-    symbolKind: Option[WorkspaceSymbolClientCapabilities.SymbolKind] = None,
-    tagSupport: Option[WorkspaceSymbolClientCapabilities.TagSupport] = None,
-    resolveSupport: Option[WorkspaceSymbolClientCapabilities.ResolveSupport] =
-      None
+    symbolKind: Option[structures.ClientSymbolKindOptions] = None,
+    tagSupport: Option[structures.ClientSymbolTagOptions] = None,
+    resolveSupport: Option[structures.ClientSymbolResolveOptions] = None
 )
 object WorkspaceSymbolClientCapabilities
-    extends codecs.structures_WorkspaceSymbolClientCapabilitiesCodec:
-  /** @param valueSet
-    *   The symbol kind values the client supports. When this property exists
-    *   the client also guarantees that it will handle values outside its set
-    *   gracefully and falls back to a default value when unknown.
-    *
-    * If this property is not present the client only supports the symbol kinds
-    * from `File` to `Array` as defined in the initial version of the protocol.
-    */
-  case class SymbolKind(
-      valueSet: Option[Vector[enumerations.SymbolKind]] = None
-  )
-  object SymbolKind
-      extends codecs.structures_WorkspaceSymbolClientCapabilities_SymbolKindCodec
-
-  /** @param valueSet
-    *   The tags supported by the client.
-    */
-  case class TagSupport(
-      valueSet: Vector[enumerations.SymbolTag]
-  )
-  object TagSupport
-      extends codecs.structures_WorkspaceSymbolClientCapabilities_TagSupportCodec
-
-  /** @param properties
-    *   The properties that a client can resolve lazily. Usually
-    *   `location.range`
-    */
-  case class ResolveSupport(
-      properties: Vector[String]
-  )
-  object ResolveSupport
-      extends codecs.structures_WorkspaceSymbolClientCapabilities_ResolveSupportCodec
-end WorkspaceSymbolClientCapabilities
+    extends codecs.structures_WorkspaceSymbolClientCapabilitiesCodec

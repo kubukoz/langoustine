@@ -61,8 +61,7 @@ import runtime.{*, given}
   * since 3.17.0
   */
 case class GeneralClientCapabilities(
-    staleRequestSupport: Option[GeneralClientCapabilities.StaleRequestSupport] =
-      None,
+    staleRequestSupport: Option[structures.StaleRequestSupportOptions] = None,
     regularExpressions: Option[
       structures.RegularExpressionsClientCapabilities
     ] = None,
@@ -70,18 +69,4 @@ case class GeneralClientCapabilities(
     positionEncodings: Option[Vector[enumerations.PositionEncodingKind]] = None
 )
 object GeneralClientCapabilities
-    extends codecs.structures_GeneralClientCapabilitiesCodec:
-  /** @param cancel
-    *   The client will actively cancel the request.
-    *
-    * @param retryOnContentModified
-    *   The list of requests for which the client will retry the request if it
-    *   receives a response with error code `ContentModified`
-    */
-  case class StaleRequestSupport(
-      cancel: Boolean,
-      retryOnContentModified: Vector[String]
-  )
-  object StaleRequestSupport
-      extends codecs.structures_GeneralClientCapabilities_StaleRequestSupportCodec
-end GeneralClientCapabilities
+    extends codecs.structures_GeneralClientCapabilitiesCodec

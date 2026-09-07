@@ -24,35 +24,30 @@ import io.circe.*
 import scala.reflect.*
 
 opaque type PrepareRenameResult =
-  (structures.Range | PrepareRenameResult.S0 | PrepareRenameResult.S1)
+  (structures.Range | structures.PrepareRenamePlaceholder |
+    structures.PrepareRenameDefaultBehavior)
 object PrepareRenameResult extends codecs.aliases_PrepareRenameResult:
-  inline def apply(v: structures.Range): PrepareRenameResult       = v
-  inline def apply(v: PrepareRenameResult.S0): PrepareRenameResult = v
-  inline def apply(v: PrepareRenameResult.S1): PrepareRenameResult = v
+  inline def apply(v: structures.Range): PrepareRenameResult = v
+  inline def apply(
+      v: structures.PrepareRenamePlaceholder
+  ): PrepareRenameResult = v
+  inline def apply(
+      v: structures.PrepareRenameDefaultBehavior
+  ): PrepareRenameResult = v
 
   extension (v: PrepareRenameResult)
-    inline def value
-        : (structures.Range | PrepareRenameResult.S0 | PrepareRenameResult.S1) =
-      v
+    inline def value: (structures.Range | structures.PrepareRenamePlaceholder |
+      structures.PrepareRenameDefaultBehavior) = v
 
   given Typeable[PrepareRenameResult] with
     def unapply(s: Any): Option[s.type & PrepareRenameResult] =
       s match
         case c: structures.Range =>
           Some(c.asInstanceOf[s.type & structures.Range])
-        case c: PrepareRenameResult.S0 =>
-          Some(c.asInstanceOf[s.type & PrepareRenameResult.S0])
-        case c: PrepareRenameResult.S1 =>
-          Some(c.asInstanceOf[s.type & PrepareRenameResult.S1])
+        case c: structures.PrepareRenamePlaceholder =>
+          Some(c.asInstanceOf[s.type & structures.PrepareRenamePlaceholder])
+        case c: structures.PrepareRenameDefaultBehavior =>
+          Some(c.asInstanceOf[s.type & structures.PrepareRenameDefaultBehavior])
         case _ => Option.empty
   end given
-  case class S0(
-      range: structures.Range,
-      placeholder: String
-  )
-  object S0 extends codecs.aliases_PrepareRenameResult_S0Codec
-  case class S1(
-      defaultBehavior: Boolean
-  )
-  object S1 extends codecs.aliases_PrepareRenameResult_S1Codec
 end PrepareRenameResult

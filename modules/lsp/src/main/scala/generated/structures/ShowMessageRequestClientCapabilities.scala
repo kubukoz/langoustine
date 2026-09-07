@@ -27,19 +27,8 @@ import runtime.{*, given}
   *   Capabilities specific to the `MessageActionItem` type.
   */
 case class ShowMessageRequestClientCapabilities(
-    messageActionItem: Option[
-      ShowMessageRequestClientCapabilities.MessageActionItem
-    ] = None
+    messageActionItem: Option[structures.ClientShowMessageActionItemOptions] =
+      None
 )
 object ShowMessageRequestClientCapabilities
-    extends codecs.structures_ShowMessageRequestClientCapabilitiesCodec:
-  /** @param additionalPropertiesSupport
-    *   Whether the client supports additional attributes which are preserved
-    *   and send back to the server in the request's response.
-    */
-  case class MessageActionItem(
-      additionalPropertiesSupport: Option[Boolean] = None
-  )
-  object MessageActionItem
-      extends codecs.structures_ShowMessageRequestClientCapabilities_MessageActionItemCodec
-end ShowMessageRequestClientCapabilities
+    extends codecs.structures_ShowMessageRequestClientCapabilitiesCodec

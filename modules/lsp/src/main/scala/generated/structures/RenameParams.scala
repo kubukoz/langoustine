@@ -23,23 +23,23 @@ import runtime.{*, given}
 
 /** The parameters of a {@link RenameRequest}.
   *
-  * @param textDocument
-  *   The document to rename.
-  *
-  * @param position
-  *   The position at which this request was sent.
-  *
   * @param newName
   *   The new name of the symbol. If the given name is not valid the request
   *   must return a {@link ResponseError} with an appropriate message set.
+  *
+  * @param textDocument
+  *   The text document.
+  *
+  * @param position
+  *   The position inside the text document.
   *
   * @param workDoneToken
   *   An optional token that a server can use to report work done progress.
   */
 case class RenameParams(
+    newName: String,
     textDocument: structures.TextDocumentIdentifier,
     position: structures.Position,
-    newName: String,
     workDoneToken: Option[aliases.ProgressToken] = None
 )
 object RenameParams extends codecs.structures_RenameParamsCodec

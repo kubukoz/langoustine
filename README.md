@@ -21,7 +21,8 @@ By "clean room" we mean
 2. Idiomatic Scala code
 3. Using Scala 3 features
 
-Most of the code is generated directly from the recently published LSP specification in JSON format.
+Most of the code is generated directly from the published LSP specification in JSON format
+(currently LSP **3.18**, see `metaModel.json`).
 
 
 ## Is there a simple example?

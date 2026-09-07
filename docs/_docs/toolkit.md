@@ -7,7 +7,7 @@ Eventual goal of Langoustine is to provide performant implementations of whateve
 
 ## Semantic tokens encoder
 
-LSP protocol supports [Semantic tokens](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_semanticTokens) but 
+LSP protocol supports [Semantic tokens](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_semanticTokens) but 
 their usage comes with a particular encoding that the LSP servers must use.
 
 This encoding consists of two parts:

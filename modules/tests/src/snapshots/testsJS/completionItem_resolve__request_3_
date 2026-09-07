@@ -1,17 +1,22 @@
 {
   "label" : "randomString",
-  "labelDetails" : {
-    "description" : "randomString"
-  },
-  "kind" : 13,
-  "documentation" : "randomString",
-  "filterText" : "randomString",
-  "insertText" : "randomString",
-  "insertTextMode" : 2,
+  "kind" : 20,
+  "detail" : "randomString",
+  "preselect" : true,
+  "insertTextFormat" : 1,
   "textEditText" : "randomString",
   "commitCharacters" : [
     "randomString",
     "randomString",
+    "randomString",
     "randomString"
-  ]
+  ],
+  "command" : {
+    "title" : "randomString",
+    "tooltip" : "randomString",
+    "command" : "randomString"
+  },
+  "data" : {
+    "hello" : "yo"
+  }
 }

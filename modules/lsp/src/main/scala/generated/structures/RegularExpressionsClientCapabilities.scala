@@ -32,7 +32,7 @@ import runtime.{*, given}
   *   The engine's version.
   */
 case class RegularExpressionsClientCapabilities(
-    engine: String,
+    engine: aliases.RegularExpressionEngineKind,
     version: Option[String] = None
 )
 object RegularExpressionsClientCapabilities

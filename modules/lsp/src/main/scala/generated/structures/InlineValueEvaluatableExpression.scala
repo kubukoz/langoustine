@@ -21,18 +21,24 @@ package structures
 import langoustine.*
 import runtime.{*, given}
 
-/** Provide an inline value through an expression evaluation. If only a range is
-  * specified, the expression will be extracted from the underlying document. An
-  * optional expression can be used to override the extracted expression.
+/** To compute an inline value through an expression evaluation.
+  *
+  * If only a range is specified, the expression should be extracted from the
+  * underlying document.
+  *
+  * An optional expression could be evaluated instead of the extracted
+  * expression.
   *
   * @since 3.17.0
   *
   * @param range
-  *   The document range for which the inline value applies. The range is used
-  *   to extract the evaluatable expression from the underlying document.
+  *   The document range for which the inline value applies.
+  *
+  * The range could be used to extract the evaluatable expression from the
+  * underlying document.
   *
   * @param expression
-  *   If specified the expression overrides the extracted expression.
+  *   If specified the expression could be evaluated instead.
   */
 case class InlineValueEvaluatableExpression(
     range: structures.Range,

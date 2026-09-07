@@ -45,7 +45,7 @@ case class SemanticTokensRegistrationOptions(
     documentSelector: Option[aliases.DocumentSelector] = None,
     legend: structures.SemanticTokensLegend,
     range: Option[(Boolean | SemanticTokensRegistrationOptions.S0)] = None,
-    full: Option[(Boolean | SemanticTokensRegistrationOptions.S1)] = None,
+    full: Option[(Boolean | structures.SemanticTokensFullDelta)] = None,
     id: Option[String] = None
 )
 object SemanticTokensRegistrationOptions
@@ -53,12 +53,3 @@ object SemanticTokensRegistrationOptions
   case class S0(
   )
   object S0 extends codecs.structures_SemanticTokensRegistrationOptions_S0Codec
-
-  /** @param delta
-    *   The server supports deltas for full documents.
-    */
-  case class S1(
-      delta: Option[Boolean] = None
-  )
-  object S1 extends codecs.structures_SemanticTokensRegistrationOptions_S1Codec
-end SemanticTokensRegistrationOptions

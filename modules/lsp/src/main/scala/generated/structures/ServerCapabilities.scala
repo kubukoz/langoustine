@@ -154,6 +154,11 @@ import runtime.{*, given}
   *
   * since 3.17.0
   *
+  * @param inlineCompletionProvider
+  *   Inline completion options used during static registration.
+  *
+  * since 3.18.0
+  *
   * @param workspace
   *   Workspace specific server capabilities.
   *
@@ -252,25 +257,10 @@ case class ServerCapabilities(
     diagnosticProvider: Option[
       (structures.DiagnosticOptions | structures.DiagnosticRegistrationOptions)
     ] = None,
-    workspace: Option[ServerCapabilities.Workspace] = None,
+    inlineCompletionProvider: Option[
+      (Boolean | structures.InlineCompletionOptions)
+    ] = None,
+    workspace: Option[structures.WorkspaceOptions] = None,
     experimental: Option[io.circe.Json] = None
 )
-object ServerCapabilities extends codecs.structures_ServerCapabilitiesCodec:
-  /** @param workspaceFolders
-    *   The server supports workspace folder.
-    *
-    * since 3.6.0
-    *
-    * @param fileOperations
-    *   The server is interested in notifications/requests for operations on
-    *   files.
-    *
-    * since 3.16.0
-    */
-  case class Workspace(
-      workspaceFolders: Option[structures.WorkspaceFoldersServerCapabilities] =
-        None,
-      fileOperations: Option[structures.FileOperationOptions] = None
-  )
-  object Workspace extends codecs.structures_ServerCapabilities_WorkspaceCodec
-end ServerCapabilities
+object ServerCapabilities extends codecs.structures_ServerCapabilitiesCodec

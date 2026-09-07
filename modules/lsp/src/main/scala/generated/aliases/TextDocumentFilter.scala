@@ -29,7 +29,7 @@ import scala.reflect.*
   * {@link TextDocument.fileName path}.
   *
   * Glob patterns can have the following syntax:
-  *   - `*` to match one or more characters in a path segment
+  *   - `*` to match zero or more characters in a path segment
   *   - `?` to match on one character in a path segment
   *   - `**` to match any number of path segments, including none
   *   - `{}` to group sub patterns into an OR expression. (e.g. `**​.{ts,js}`
@@ -50,73 +50,32 @@ import scala.reflect.*
   * @since 3.17.0
   */
 opaque type TextDocumentFilter =
-  (TextDocumentFilter.S0 | TextDocumentFilter.S1 | TextDocumentFilter.S2)
+  (structures.TextDocumentFilterLanguage | structures.TextDocumentFilterScheme |
+    structures.TextDocumentFilterPattern)
 object TextDocumentFilter extends codecs.aliases_TextDocumentFilter:
-  inline def apply(v: TextDocumentFilter.S0): TextDocumentFilter = v
-  inline def apply(v: TextDocumentFilter.S1): TextDocumentFilter = v
-  inline def apply(v: TextDocumentFilter.S2): TextDocumentFilter = v
+  inline def apply(
+      v: structures.TextDocumentFilterLanguage
+  ): TextDocumentFilter = v
+  inline def apply(v: structures.TextDocumentFilterScheme): TextDocumentFilter =
+    v
+  inline def apply(
+      v: structures.TextDocumentFilterPattern
+  ): TextDocumentFilter = v
 
   extension (v: TextDocumentFilter)
-    inline def value: (TextDocumentFilter.S0 | TextDocumentFilter.S1 |
-      TextDocumentFilter.S2) = v
+    inline def value: (structures.TextDocumentFilterLanguage |
+      structures.TextDocumentFilterScheme |
+      structures.TextDocumentFilterPattern) = v
 
   given Typeable[TextDocumentFilter] with
     def unapply(s: Any): Option[s.type & TextDocumentFilter] =
       s match
-        case c: TextDocumentFilter.S0 =>
-          Some(c.asInstanceOf[s.type & TextDocumentFilter.S0])
-        case c: TextDocumentFilter.S1 =>
-          Some(c.asInstanceOf[s.type & TextDocumentFilter.S1])
-        case c: TextDocumentFilter.S2 =>
-          Some(c.asInstanceOf[s.type & TextDocumentFilter.S2])
+        case c: structures.TextDocumentFilterLanguage =>
+          Some(c.asInstanceOf[s.type & structures.TextDocumentFilterLanguage])
+        case c: structures.TextDocumentFilterScheme =>
+          Some(c.asInstanceOf[s.type & structures.TextDocumentFilterScheme])
+        case c: structures.TextDocumentFilterPattern =>
+          Some(c.asInstanceOf[s.type & structures.TextDocumentFilterPattern])
         case _ => Option.empty
   end given
-
-  /** @param language
-    *   A language id, like `typescript`.
-    *
-    * @param scheme
-    *   A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-    *
-    * @param pattern
-    *   A glob pattern, like **​.{ts,js}. See TextDocumentFilter for examples.
-    */
-  case class S0(
-      language: String,
-      scheme: Option[String] = None,
-      pattern: Option[String] = None
-  )
-  object S0 extends codecs.aliases_TextDocumentFilter_S0Codec
-
-  /** @param language
-    *   A language id, like `typescript`.
-    *
-    * @param scheme
-    *   A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-    *
-    * @param pattern
-    *   A glob pattern, like **​.{ts,js}. See TextDocumentFilter for examples.
-    */
-  case class S1(
-      language: Option[String] = None,
-      scheme: String,
-      pattern: Option[String] = None
-  )
-  object S1 extends codecs.aliases_TextDocumentFilter_S1Codec
-
-  /** @param language
-    *   A language id, like `typescript`.
-    *
-    * @param scheme
-    *   A Uri {@link Uri.scheme scheme}, like `file` or `untitled`.
-    *
-    * @param pattern
-    *   A glob pattern, like **​.{ts,js}. See TextDocumentFilter for examples.
-    */
-  case class S2(
-      language: Option[String] = None,
-      scheme: Option[String] = None,
-      pattern: String
-  )
-  object S2 extends codecs.aliases_TextDocumentFilter_S2Codec
 end TextDocumentFilter

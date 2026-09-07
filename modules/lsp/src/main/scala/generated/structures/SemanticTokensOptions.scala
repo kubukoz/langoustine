@@ -38,7 +38,7 @@ import runtime.{*, given}
 case class SemanticTokensOptions(
     legend: structures.SemanticTokensLegend,
     range: Option[(Boolean | SemanticTokensOptions.S0)] = None,
-    full: Option[(Boolean | SemanticTokensOptions.S1)] = None,
+    full: Option[(Boolean | structures.SemanticTokensFullDelta)] = None,
     workDoneProgress: Option[Boolean] = None
 )
 object SemanticTokensOptions
@@ -46,12 +46,3 @@ object SemanticTokensOptions
   case class S0(
   )
   object S0 extends codecs.structures_SemanticTokensOptions_S0Codec
-
-  /** @param delta
-    *   The server supports deltas for full documents.
-    */
-  case class S1(
-      delta: Option[Boolean] = None
-  )
-  object S1 extends codecs.structures_SemanticTokensOptions_S1Codec
-end SemanticTokensOptions

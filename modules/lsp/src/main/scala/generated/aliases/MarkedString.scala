@@ -39,23 +39,19 @@ import scala.reflect.*
   * @deprecated
   *   use MarkupContent instead.
   */
-opaque type MarkedString = (String | MarkedString.S0)
+opaque type MarkedString = (String | structures.MarkedStringWithLanguage)
 object MarkedString extends codecs.aliases_MarkedString:
-  inline def apply(v: String): MarkedString          = v
-  inline def apply(v: MarkedString.S0): MarkedString = v
+  inline def apply(v: String): MarkedString                              = v
+  inline def apply(v: structures.MarkedStringWithLanguage): MarkedString = v
 
-  extension (v: MarkedString) inline def value: (String | MarkedString.S0) = v
+  extension (v: MarkedString)
+    inline def value: (String | structures.MarkedStringWithLanguage) = v
 
   given Typeable[MarkedString] with
     def unapply(s: Any): Option[s.type & MarkedString] =
       s match
-        case c: String          => Some(c.asInstanceOf[s.type & String])
-        case c: MarkedString.S0 =>
-          Some(c.asInstanceOf[s.type & MarkedString.S0])
+        case c: String => Some(c.asInstanceOf[s.type & String])
+        case c: structures.MarkedStringWithLanguage =>
+          Some(c.asInstanceOf[s.type & structures.MarkedStringWithLanguage])
         case _ => Option.empty
-  case class S0(
-      language: String,
-      value: String
-  )
-  object S0 extends codecs.aliases_MarkedString_S0Codec
 end MarkedString

@@ -34,10 +34,41 @@ import runtime.{*, given}
   * @param relatedDocumentSupport
   *   Whether the clients supports related documents for document diagnostic
   *   pulls.
+  *
+  * @param markupMessageSupport
+  *   Whether the client supports `MarkupContent` in diagnostic messages.
+  *
+  * since 3.18.0
+  *
+  * @param relatedInformation
+  *   Whether the clients accepts diagnostics with related information.
+  *
+  * @param tagSupport
+  *   Client supports the tag property to provide meta data about a diagnostic.
+  *   Clients supporting tags have to handle unknown tags gracefully.
+  *
+  * since 3.15.0
+  *
+  * @param codeDescriptionSupport
+  *   Client supports a codeDescription property
+  *
+  * since 3.16.0
+  *
+  * @param dataSupport
+  *   Whether code action supports the `data` property which is preserved
+  *   between a `textDocument/publishDiagnostics` and `textDocument/codeAction`
+  *   request.
+  *
+  * since 3.16.0
   */
 case class DiagnosticClientCapabilities(
     dynamicRegistration: Option[Boolean] = None,
-    relatedDocumentSupport: Option[Boolean] = None
+    relatedDocumentSupport: Option[Boolean] = None,
+    markupMessageSupport: Option[Boolean] = None,
+    relatedInformation: Option[Boolean] = None,
+    tagSupport: Option[structures.ClientDiagnosticsTagOptions] = None,
+    codeDescriptionSupport: Option[Boolean] = None,
+    dataSupport: Option[Boolean] = None
 )
 object DiagnosticClientCapabilities
     extends codecs.structures_DiagnosticClientCapabilitiesCodec

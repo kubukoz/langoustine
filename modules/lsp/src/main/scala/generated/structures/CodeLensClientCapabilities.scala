@@ -25,9 +25,16 @@ import runtime.{*, given}
   *
   * @param dynamicRegistration
   *   Whether code lens supports dynamic registration.
+  *
+  * @param resolveSupport
+  *   Whether the client supports resolving additional code lens properties via
+  *   a separate `codeLens/resolve` request.
+  *
+  * since 3.18.0
   */
 case class CodeLensClientCapabilities(
-    dynamicRegistration: Option[Boolean] = None
+    dynamicRegistration: Option[Boolean] = None,
+    resolveSupport: Option[structures.ClientCodeLensResolveOptions] = None
 )
 object CodeLensClientCapabilities
     extends codecs.structures_CodeLensClientCapabilitiesCodec

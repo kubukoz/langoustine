@@ -26,9 +26,9 @@ import runtime.{*, given}
   * @since 3.16.0
   *
   * @param uri
-  *   A file:// URI for the location of the file/folder being deleted.
+  *   A URI for the location of the file/folder being deleted.
   */
 case class FileDelete(
-    uri: String
+    uri: runtime.DocumentUri
 )
 object FileDelete extends codecs.structures_FileDeleteCodec

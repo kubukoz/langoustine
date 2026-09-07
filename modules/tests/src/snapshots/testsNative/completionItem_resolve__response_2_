@@ -1,41 +1,12 @@
 {
   "label" : "randomString",
-  "labelDetails" : {
-    "description" : "randomString"
-  },
   "detail" : "randomString",
-  "documentation" : {
-    "kind" : "plaintext",
-    "value" : "randomString"
-  },
-  "deprecated" : true,
+  "preselect" : true,
   "sortText" : "randomString",
-  "filterText" : "randomString",
-  "insertTextMode" : 2,
-  "textEdit" : {
-    "newText" : "newText",
-    "insert" : {
-      "start" : {
-        "line" : 60,
-        "character" : 21
-      },
-      "end" : {
-        "line" : 42,
-        "character" : 13
-      }
-    },
-    "replace" : {
-      "start" : {
-        "line" : 50,
-        "character" : 13
-      },
-      "end" : {
-        "line" : 51,
-        "character" : 55
-      }
-    }
-  },
-  "textEditText" : "randomString",
+  "insertText" : "randomString",
+  "insertTextMode" : 1,
+  "additionalTextEdits" : [
+  ],
   "command" : {
     "title" : "randomString",
     "command" : "randomString"

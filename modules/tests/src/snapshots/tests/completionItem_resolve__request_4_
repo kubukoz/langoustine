@@ -1,36 +1,21 @@
 {
   "label" : "randomString",
   "labelDetails" : {
-    "description" : "randomString"
+    "detail" : "randomString"
   },
-  "kind" : 8,
+  "tags" : [
+  ],
   "detail" : "randomString",
   "documentation" : "randomString",
-  "preselect" : false,
-  "sortText" : "randomString",
-  "insertText" : "randomString",
-  "textEdit" : {
-    "newText" : "newText",
-    "insert" : {
-      "start" : {
-        "line" : 87,
-        "character" : 72
-      },
-      "end" : {
-        "line" : 61,
-        "character" : 42
-      }
-    },
-    "replace" : {
-      "start" : {
-        "line" : 21,
-        "character" : 83
-      },
-      "end" : {
-        "line" : 4,
-        "character" : 24
-      }
-    }
+  "insertTextFormat" : 1,
+  "insertTextMode" : 2,
+  "additionalTextEdits" : [
+  ],
+  "command" : {
+    "title" : "randomString",
+    "command" : "randomString"
   },
-  "textEditText" : "randomString"
+  "data" : {
+    "hello" : "yo"
+  }
 }

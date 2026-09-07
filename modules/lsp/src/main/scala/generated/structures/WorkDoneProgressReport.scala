@@ -38,10 +38,10 @@ import runtime.{*, given}
   * @param percentage
   *   Optional progress percentage to display (value 100 is considered 100%). If
   *   not provided infinite progress is assumed and clients are allowed to
-  *   ignore the `percentage` value in subsequent report notifications.
+  *   ignore the `percentage` value in subsequent in report notifications.
   *
   * The value should be steadily rising. Clients are free to ignore values that
-  * are not following this rule. The value range is [0, 100].
+  * are not following this rule. The value range is [0, 100]
   */
 case class WorkDoneProgressReport(
     kind: "report",

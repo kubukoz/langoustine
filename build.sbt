@@ -48,7 +48,7 @@ val V = new {
   val default =
     Seq(VirtualAxis.scalaABIVersion(scala), VirtualAxis.jvm)
 
-  val LSP_PROTOCOL = "3.17"
+  val LSP_PROTOCOL = "3.18"
 }
 
 lazy val noPublishing = Seq(

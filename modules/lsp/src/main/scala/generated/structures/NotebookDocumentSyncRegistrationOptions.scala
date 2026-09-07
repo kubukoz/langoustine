@@ -38,49 +38,11 @@ import runtime.{*, given}
   */
 case class NotebookDocumentSyncRegistrationOptions(
     notebookSelector: Vector[
-      (NotebookDocumentSyncRegistrationOptions.S0 |
-        NotebookDocumentSyncRegistrationOptions.S1)
+      (structures.NotebookDocumentFilterWithNotebook |
+        structures.NotebookDocumentFilterWithCells)
     ],
     save: Option[Boolean] = None,
     id: Option[String] = None
 )
 object NotebookDocumentSyncRegistrationOptions
-    extends codecs.structures_NotebookDocumentSyncRegistrationOptionsCodec:
-  /** @param notebook
-    *   The notebook to be synced If a string value is provided it matches
-    *   against the notebook type. '*' matches every notebook.
-    *
-    * @param cells
-    *   The cells of the matching notebook to be synced.
-    */
-  case class S0(
-      notebook: (String | aliases.NotebookDocumentFilter),
-      cells: Option[Vector[S0.S0]] = None
-  )
-  object S0
-      extends codecs.structures_NotebookDocumentSyncRegistrationOptions_S0Codec:
-    case class S0(
-        language: String
-    )
-    object S0
-        extends codecs.structures_NotebookDocumentSyncRegistrationOptions_S0_S0Codec
-
-  /** @param notebook
-    *   The notebook to be synced If a string value is provided it matches
-    *   against the notebook type. '*' matches every notebook.
-    *
-    * @param cells
-    *   The cells of the matching notebook to be synced.
-    */
-  case class S1(
-      notebook: Option[(String | aliases.NotebookDocumentFilter)] = None,
-      cells: Vector[S1.S0]
-  )
-  object S1
-      extends codecs.structures_NotebookDocumentSyncRegistrationOptions_S1Codec:
-    case class S0(
-        language: String
-    )
-    object S0
-        extends codecs.structures_NotebookDocumentSyncRegistrationOptions_S1_S0Codec
-end NotebookDocumentSyncRegistrationOptions
+    extends codecs.structures_NotebookDocumentSyncRegistrationOptionsCodec

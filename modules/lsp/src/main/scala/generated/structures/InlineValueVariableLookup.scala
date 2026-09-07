@@ -21,15 +21,21 @@ package structures
 import langoustine.*
 import runtime.{*, given}
 
-/** Provide inline value through a variable lookup. If only a range is
-  * specified, the variable name will be extracted from the underlying document.
-  * An optional variable name can be used to override the extracted name.
+/** To compute inline value through a variable lookup.
+  *
+  * If only a range is specified, the variable name should be extracted from the
+  * underlying document.
+  *
+  * An optional variable name could be used to lookup instead of the extracted
+  * name.
   *
   * @since 3.17.0
   *
   * @param range
-  *   The document range for which the inline value applies. The range is used
-  *   to extract the variable name from the underlying document.
+  *   The document range for which the inline value applies.
+  *
+  * The range could be used to extract the variable name from the underlying
+  * document.
   *
   * @param variableName
   *   If specified the name of the variable to look up.

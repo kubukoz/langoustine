@@ -29,10 +29,16 @@ import runtime.{*, given}
   *
   * @param edit
   *   The edits to apply.
+  *
+  * @param metadata
+  *   Additional data about the edit.
+  *
+  * since 3.18.0
   */
 case class ApplyWorkspaceEditParams(
     label: Option[String] = None,
-    edit: structures.WorkspaceEdit
+    edit: structures.WorkspaceEdit,
+    metadata: Option[structures.WorkspaceEditMetadata] = None
 )
 object ApplyWorkspaceEditParams
     extends codecs.structures_ApplyWorkspaceEditParamsCodec

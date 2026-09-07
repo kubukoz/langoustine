@@ -38,59 +38,40 @@ import runtime.{*, given}
   *   a completion item itself doesn't specify the value.
   *
   * If a completion list specifies a default value and a completion item also
-  * specifies a corresponding value the one from the item is used.
+  * specifies a corresponding value, the rules for combining these are defined
+  * by `applyKinds` (if the client supports it), defaulting to
+  * ApplyKind.Replace.
   *
   * Servers are only allowed to return default values if the client signals
   * support for this via the `completionList.itemDefaults` capability.
   *
   * since 3.17.0
   *
+  * @param applyKind
+  *   Specifies how fields from a completion item should be combined with those
+  *   from `completionList.itemDefaults`.
+  *
+  * If unspecified, all fields will be treated as ApplyKind.Replace.
+  *
+  * If a field's value is ApplyKind.Replace, the value from a completion item
+  * (if provided and not `null`) will always be used instead of the value from
+  * `completionItem.itemDefaults`.
+  *
+  * If a field's value is ApplyKind.Merge, the values will be merged using the
+  * rules defined against each field below.
+  *
+  * Servers are only allowed to return `applyKind` if the client signals support
+  * for this via the `completionList.applyKindSupport` capability.
+  *
+  * since 3.18.0
+  *
   * @param items
   *   The completion items.
   */
 case class CompletionList(
     isIncomplete: Boolean,
-    itemDefaults: Option[CompletionList.ItemDefaults] = None,
+    itemDefaults: Option[structures.CompletionItemDefaults] = None,
+    applyKind: Option[structures.CompletionItemApplyKinds] = None,
     items: Vector[structures.CompletionItem]
 )
-object CompletionList extends codecs.structures_CompletionListCodec:
-  /** @param commitCharacters
-    *   A default commit character set.
-    *
-    * since 3.17.0
-    *
-    * @param editRange
-    *   A default edit range.
-    *
-    * since 3.17.0
-    *
-    * @param insertTextFormat
-    *   A default insert text format.
-    *
-    * since 3.17.0
-    *
-    * @param insertTextMode
-    *   A default insert text mode.
-    *
-    * since 3.17.0
-    *
-    * @param data
-    *   A default data value.
-    *
-    * since 3.17.0
-    */
-  case class ItemDefaults(
-      commitCharacters: Option[Vector[String]] = None,
-      editRange: Option[(structures.Range | ItemDefaults.S0)] = None,
-      insertTextFormat: Option[enumerations.InsertTextFormat] = None,
-      insertTextMode: Option[enumerations.InsertTextMode] = None,
-      data: Option[io.circe.Json] = None
-  )
-  object ItemDefaults
-      extends codecs.structures_CompletionList_ItemDefaultsCodec:
-    case class S0(
-        insert: structures.Range,
-        replace: structures.Range
-    )
-    object S0 extends codecs.structures_CompletionList_ItemDefaults_S0Codec
-end CompletionList
+object CompletionList extends codecs.structures_CompletionListCodec

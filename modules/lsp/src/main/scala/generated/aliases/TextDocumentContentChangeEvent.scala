@@ -27,53 +27,34 @@ import scala.reflect.*
   * it is considered to be the full content of the document.
   */
 opaque type TextDocumentContentChangeEvent =
-  (TextDocumentContentChangeEvent.S0 | TextDocumentContentChangeEvent.S1)
+  (structures.TextDocumentContentChangePartial |
+    structures.TextDocumentContentChangeWholeDocument)
 object TextDocumentContentChangeEvent
     extends codecs.aliases_TextDocumentContentChangeEvent:
   inline def apply(
-      v: TextDocumentContentChangeEvent.S0
+      v: structures.TextDocumentContentChangePartial
   ): TextDocumentContentChangeEvent = v
   inline def apply(
-      v: TextDocumentContentChangeEvent.S1
+      v: structures.TextDocumentContentChangeWholeDocument
   ): TextDocumentContentChangeEvent = v
 
   extension (v: TextDocumentContentChangeEvent)
-    inline def value: (TextDocumentContentChangeEvent.S0 |
-      TextDocumentContentChangeEvent.S1) = v
+    inline def value: (structures.TextDocumentContentChangePartial |
+      structures.TextDocumentContentChangeWholeDocument) = v
 
   given Typeable[TextDocumentContentChangeEvent] with
     def unapply(s: Any): Option[s.type & TextDocumentContentChangeEvent] =
       s match
-        case c: TextDocumentContentChangeEvent.S0 =>
-          Some(c.asInstanceOf[s.type & TextDocumentContentChangeEvent.S0])
-        case c: TextDocumentContentChangeEvent.S1 =>
-          Some(c.asInstanceOf[s.type & TextDocumentContentChangeEvent.S1])
+        case c: structures.TextDocumentContentChangePartial =>
+          Some(
+            c.asInstanceOf[s.type & structures.TextDocumentContentChangePartial]
+          )
+        case c: structures.TextDocumentContentChangeWholeDocument =>
+          Some(
+            c.asInstanceOf[
+              s.type & structures.TextDocumentContentChangeWholeDocument
+            ]
+          )
         case _ => Option.empty
-
-  /** @param range
-    *   The range of the document that changed.
-    *
-    * @param rangeLength
-    *   The optional length of the range that got replaced.
-    *
-    * @deprecated
-    *   use range instead.
-    *
-    * @param text
-    *   The new text for the provided range.
-    */
-  case class S0(
-      range: structures.Range,
-      rangeLength: Option[runtime.uinteger] = None,
-      text: String
-  )
-  object S0 extends codecs.aliases_TextDocumentContentChangeEvent_S0Codec
-
-  /** @param text
-    *   The new text of the whole document.
-    */
-  case class S1(
-      text: String
-  )
-  object S1 extends codecs.aliases_TextDocumentContentChangeEvent_S1Codec
+  end given
 end TextDocumentContentChangeEvent

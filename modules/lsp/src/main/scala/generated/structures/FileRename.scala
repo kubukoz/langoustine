@@ -26,13 +26,13 @@ import runtime.{*, given}
   * @since 3.16.0
   *
   * @param oldUri
-  *   A file:// URI for the original location of the file/folder being renamed.
+  *   A URI for the original location of the file/folder being renamed.
   *
   * @param newUri
-  *   A file:// URI for the new location of the file/folder being renamed.
+  *   A URI for the new location of the file/folder being renamed.
   */
 case class FileRename(
-    oldUri: String,
-    newUri: String
+    oldUri: runtime.DocumentUri,
+    newUri: runtime.DocumentUri
 )
 object FileRename extends codecs.structures_FileRenameCodec

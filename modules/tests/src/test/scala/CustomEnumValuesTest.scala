@@ -43,4 +43,21 @@ object CustomEnumValuesTest extends weaver.FunSuite:
   test("uinteger enum accepts custom values") {
     expect.same(io.circe.Json.fromInt(7), encoded(WatchKind(uinteger(7))))
   }
+
+  // LanguageKind is new in 3.18, and is what made the lack of a public
+  // constructor concrete: `languageId` used to be a bare String.
+  test("LanguageKind accepts custom values") {
+    val custom = LanguageKind("my-toy-lang")
+
+    expect.same(io.circe.Json.fromString("my-toy-lang"), encoded(custom)) and
+      expect(!LanguageKind.ALL.contains(custom)) and
+      expect(LanguageKind.ALL.contains(LanguageKind.Plaintext))
+  }
+
+  test("LanguageKind aliases Delphi and Pascal to the same value") {
+    // Upstream spells both as "pascal", so ALL holds one fewer distinct
+    // value than there are named entries.
+    expect.same(LanguageKind.Delphi, LanguageKind.Pascal) and
+      expect.same(61, LanguageKind.ALL.size)
+  }
 end CustomEnumValuesTest

@@ -611,6 +611,35 @@ private[lsp] trait requests_textDocument_inlayHint:
     Decoder.decodeOption(Decoder.decodeVector(structures.InlayHint.fromJson))
 end requests_textDocument_inlayHint
 
+private[lsp] trait requests_textDocument_inlineCompletion:
+  import requests.textDocument.inlineCompletion.{In, Out}
+  given inputFromJson: Decoder[In] =
+    structures.InlineCompletionParams.fromJson
+
+  given inputToJson: Encoder[In] =
+    structures.InlineCompletionParams.toJson
+
+  given outputToJson: Encoder[Out] =
+    Encoder.encodeOption(
+      Enc.union2[structures.InlineCompletionList, Vector[
+        structures.InlineCompletionItem
+      ]](
+        structures.InlineCompletionList.toJson,
+        Encoder.encodeVector(structures.InlineCompletionItem.toJson)
+      )
+    )
+
+  given outputFromJson: Decoder[Out] =
+    Decoder.decodeOption(
+      Dec.union2[structures.InlineCompletionList, Vector[
+        structures.InlineCompletionItem
+      ]](
+        structures.InlineCompletionList.fromJson,
+        Decoder.decodeVector(structures.InlineCompletionItem.fromJson)
+      )
+    )
+end requests_textDocument_inlineCompletion
+
 private[lsp] trait requests_textDocument_inlineValue:
   import requests.textDocument.inlineValue.{In, Out}
   given inputFromJson: Decoder[In] =
@@ -745,6 +774,21 @@ private[lsp] trait requests_textDocument_rangeFormatting:
   given outputFromJson: Decoder[Out] =
     Decoder.decodeOption(Decoder.decodeVector(structures.TextEdit.fromJson))
 end requests_textDocument_rangeFormatting
+
+private[lsp] trait requests_textDocument_rangesFormatting:
+  import requests.textDocument.rangesFormatting.{In, Out}
+  given inputFromJson: Decoder[In] =
+    structures.DocumentRangesFormattingParams.fromJson
+
+  given inputToJson: Encoder[In] =
+    structures.DocumentRangesFormattingParams.toJson
+
+  given outputToJson: Encoder[Out] =
+    Encoder.encodeOption(Encoder.encodeVector(structures.TextEdit.toJson))
+
+  given outputFromJson: Decoder[Out] =
+    Decoder.decodeOption(Decoder.decodeVector(structures.TextEdit.fromJson))
+end requests_textDocument_rangesFormatting
 
 private[lsp] trait requests_textDocument_references:
   import requests.textDocument.references.{In, Out}
@@ -1146,6 +1190,21 @@ private[lsp] trait requests_workspace_executeCommand:
     Decoder.decodeOption(Decoder.decodeJson)
 end requests_workspace_executeCommand
 
+private[lsp] trait requests_workspace_foldingRange_refresh:
+  import requests.workspace.foldingRange.refresh.{In, Out}
+  given inputFromJson: Decoder[In] =
+    Decoder.const(())
+
+  given inputToJson: Encoder[In] =
+    Encoder.encodeUnit
+
+  given outputToJson: Encoder[Out] =
+    Encoder.instance[Null](_ => Json.Null)
+
+  given outputFromJson: Decoder[Out] =
+    Decoder.const[Null](null)
+end requests_workspace_foldingRange_refresh
+
 private[lsp] trait requests_workspace_inlayHint_refresh:
   import requests.workspace.inlayHint.refresh.{In, Out}
   given inputFromJson: Decoder[In] =
@@ -1217,6 +1276,36 @@ private[lsp] trait requests_workspace_symbol:
       )
     )
 end requests_workspace_symbol
+
+private[lsp] trait requests_workspace_textDocumentContent:
+  import requests.workspace.textDocumentContent.{In, Out}
+  given inputFromJson: Decoder[In] =
+    structures.TextDocumentContentParams.fromJson
+
+  given inputToJson: Encoder[In] =
+    structures.TextDocumentContentParams.toJson
+
+  given outputToJson: Encoder[Out] =
+    structures.TextDocumentContentResult.toJson
+
+  given outputFromJson: Decoder[Out] =
+    structures.TextDocumentContentResult.fromJson
+end requests_workspace_textDocumentContent
+
+private[lsp] trait requests_workspace_textDocumentContent_refresh:
+  import requests.workspace.textDocumentContent.refresh.{In, Out}
+  given inputFromJson: Decoder[In] =
+    structures.TextDocumentContentRefreshParams.fromJson
+
+  given inputToJson: Encoder[In] =
+    structures.TextDocumentContentRefreshParams.toJson
+
+  given outputToJson: Encoder[Out] =
+    Encoder.instance[Null](_ => Json.Null)
+
+  given outputFromJson: Decoder[Out] =
+    Decoder.const[Null](null)
+end requests_workspace_textDocumentContent_refresh
 
 private[lsp] trait requests_workspace_willCreateFiles:
   import requests.workspace.willCreateFiles.{In, Out}
@@ -1336,13 +1425,17 @@ private[lsp] trait structures_ApplyWorkspaceEditParamsCodec:
     val decode_label: Decoder[String]                  = Decoder.decodeString
     val decode_edit: Decoder[structures.WorkspaceEdit] =
       structures.WorkspaceEdit.fromJson
+    val decode_metadata: Decoder[structures.WorkspaceEditMetadata] =
+      structures.WorkspaceEditMetadata.fromJson
     Dec.fromJsonObject: dec =>
       for
-        label <- dec.getOpt("label", decode_label)
-        edit  <- dec.get("edit", decode_edit)
+        label    <- dec.getOpt("label", decode_label)
+        edit     <- dec.get("edit", decode_edit)
+        metadata <- dec.getOpt("metadata", decode_metadata)
       yield ApplyWorkspaceEditParams(
         label,
-        edit
+        edit,
+        metadata
       )
   end fromJson
   given toJson: Encoder[ApplyWorkspaceEditParams] =
@@ -1350,10 +1443,15 @@ private[lsp] trait structures_ApplyWorkspaceEditParamsCodec:
     val encode_label: Encoder[String]                  = Encoder.encodeString
     val encode_edit: Encoder[structures.WorkspaceEdit] =
       structures.WorkspaceEdit.toJson
+    val encode_metadata: Encoder[structures.WorkspaceEditMetadata] =
+      structures.WorkspaceEditMetadata.toJson
     Enc.toJsonObject: (enc, a) =>
       a.label.foreach: v =>
         enc.field("label", v, encode_label)
       enc.field("edit", a.edit, encode_edit)
+      a.metadata.foreach: v =>
+        enc.field("metadata", v, encode_metadata)
+  end toJson
 end structures_ApplyWorkspaceEditParamsCodec
 
 private[lsp] trait structures_ApplyWorkspaceEditResultCodec:
@@ -1798,6 +1896,24 @@ private[lsp] trait structures_ChangeAnnotationCodec:
   end toJson
 end structures_ChangeAnnotationCodec
 
+private[lsp] trait structures_ChangeAnnotationsSupportOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ChangeAnnotationsSupportOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_groupsOnLabel: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for groupsOnLabel <- dec.getOpt("groupsOnLabel", decode_groupsOnLabel)
+      yield ChangeAnnotationsSupportOptions(
+        groupsOnLabel
+      )
+  given toJson: Encoder[ChangeAnnotationsSupportOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_groupsOnLabel: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.groupsOnLabel.foreach: v =>
+        enc.field("groupsOnLabel", v, encode_groupsOnLabel)
+end structures_ChangeAnnotationsSupportOptionsCodec
+
 private[lsp] trait structures_ClientCapabilitiesCodec:
   import structures.*
   given fromJson: Decoder[ClientCapabilities] =
@@ -1866,6 +1982,593 @@ private[lsp] trait structures_ClientCapabilitiesCodec:
   end toJson
 end structures_ClientCapabilitiesCodec
 
+private[lsp] trait structures_ClientCodeActionKindOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCodeActionKindOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.CodeActionKind]] =
+      Decoder.decodeVector(enumerations.CodeActionKind.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.get("valueSet", decode_valueSet)
+      yield ClientCodeActionKindOptions(
+        valueSet
+      )
+  given toJson: Encoder[ClientCodeActionKindOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.CodeActionKind]] =
+      Encoder.encodeVector(enumerations.CodeActionKind.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("valueSet", a.valueSet, encode_valueSet)
+end structures_ClientCodeActionKindOptionsCodec
+
+private[lsp] trait structures_ClientCodeActionLiteralOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCodeActionLiteralOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_codeActionKind: Decoder[structures.ClientCodeActionKindOptions] =
+      structures.ClientCodeActionKindOptions.fromJson
+    Dec.fromJsonObject: dec =>
+      for codeActionKind <- dec.get("codeActionKind", decode_codeActionKind)
+      yield ClientCodeActionLiteralOptions(
+        codeActionKind
+      )
+  given toJson: Encoder[ClientCodeActionLiteralOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_codeActionKind: Encoder[structures.ClientCodeActionKindOptions] =
+      structures.ClientCodeActionKindOptions.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("codeActionKind", a.codeActionKind, encode_codeActionKind)
+end structures_ClientCodeActionLiteralOptionsCodec
+
+private[lsp] trait structures_ClientCodeActionResolveOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCodeActionResolveOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_properties: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    Dec.fromJsonObject: dec =>
+      for properties <- dec.get("properties", decode_properties)
+      yield ClientCodeActionResolveOptions(
+        properties
+      )
+  given toJson: Encoder[ClientCodeActionResolveOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_properties: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("properties", a.properties, encode_properties)
+end structures_ClientCodeActionResolveOptionsCodec
+
+private[lsp] trait structures_ClientCodeLensResolveOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCodeLensResolveOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_properties: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    Dec.fromJsonObject: dec =>
+      for properties <- dec.get("properties", decode_properties)
+      yield ClientCodeLensResolveOptions(
+        properties
+      )
+  given toJson: Encoder[ClientCodeLensResolveOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_properties: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("properties", a.properties, encode_properties)
+end structures_ClientCodeLensResolveOptionsCodec
+
+private[lsp] trait structures_ClientCompletionItemInsertTextModeOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCompletionItemInsertTextModeOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.InsertTextMode]] =
+      Decoder.decodeVector(enumerations.InsertTextMode.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.get("valueSet", decode_valueSet)
+      yield ClientCompletionItemInsertTextModeOptions(
+        valueSet
+      )
+  given toJson: Encoder[ClientCompletionItemInsertTextModeOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.InsertTextMode]] =
+      Encoder.encodeVector(enumerations.InsertTextMode.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("valueSet", a.valueSet, encode_valueSet)
+end structures_ClientCompletionItemInsertTextModeOptionsCodec
+
+private[lsp] trait structures_ClientCompletionItemOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCompletionItemOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_snippetSupport: Decoder[Boolean]          = Decoder.decodeBoolean
+    val decode_commitCharactersSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_documentationFormat: Decoder[Vector[enumerations.MarkupKind]] =
+      Decoder.decodeVector(enumerations.MarkupKind.fromJson)
+    val decode_deprecatedSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_preselectSupport: Decoder[Boolean]  = Decoder.decodeBoolean
+    val decode_tagSupport: Decoder[structures.CompletionItemTagOptions] =
+      structures.CompletionItemTagOptions.fromJson
+    val decode_insertReplaceSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_resolveSupport
+        : Decoder[structures.ClientCompletionItemResolveOptions] =
+      structures.ClientCompletionItemResolveOptions.fromJson
+    val decode_insertTextModeSupport
+        : Decoder[structures.ClientCompletionItemInsertTextModeOptions] =
+      structures.ClientCompletionItemInsertTextModeOptions.fromJson
+    val decode_labelDetailsSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for
+        snippetSupport <- dec.getOpt("snippetSupport", decode_snippetSupport)
+        commitCharactersSupport <- dec.getOpt(
+          "commitCharactersSupport",
+          decode_commitCharactersSupport
+        )
+        documentationFormat <- dec.getOpt(
+          "documentationFormat",
+          decode_documentationFormat
+        )
+        deprecatedSupport <- dec.getOpt(
+          "deprecatedSupport",
+          decode_deprecatedSupport
+        )
+        preselectSupport <- dec.getOpt(
+          "preselectSupport",
+          decode_preselectSupport
+        )
+        tagSupport           <- dec.getOpt("tagSupport", decode_tagSupport)
+        insertReplaceSupport <- dec.getOpt(
+          "insertReplaceSupport",
+          decode_insertReplaceSupport
+        )
+        resolveSupport <- dec.getOpt("resolveSupport", decode_resolveSupport)
+        insertTextModeSupport <- dec.getOpt(
+          "insertTextModeSupport",
+          decode_insertTextModeSupport
+        )
+        labelDetailsSupport <- dec.getOpt(
+          "labelDetailsSupport",
+          decode_labelDetailsSupport
+        )
+      yield ClientCompletionItemOptions(
+        snippetSupport,
+        commitCharactersSupport,
+        documentationFormat,
+        deprecatedSupport,
+        preselectSupport,
+        tagSupport,
+        insertReplaceSupport,
+        resolveSupport,
+        insertTextModeSupport,
+        labelDetailsSupport
+      )
+  end fromJson
+  given toJson: Encoder[ClientCompletionItemOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_snippetSupport: Encoder[Boolean]          = Encoder.encodeBoolean
+    val encode_commitCharactersSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_documentationFormat: Encoder[Vector[enumerations.MarkupKind]] =
+      Encoder.encodeVector(enumerations.MarkupKind.toJson)
+    val encode_deprecatedSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_preselectSupport: Encoder[Boolean]  = Encoder.encodeBoolean
+    val encode_tagSupport: Encoder[structures.CompletionItemTagOptions] =
+      structures.CompletionItemTagOptions.toJson
+    val encode_insertReplaceSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_resolveSupport
+        : Encoder[structures.ClientCompletionItemResolveOptions] =
+      structures.ClientCompletionItemResolveOptions.toJson
+    val encode_insertTextModeSupport
+        : Encoder[structures.ClientCompletionItemInsertTextModeOptions] =
+      structures.ClientCompletionItemInsertTextModeOptions.toJson
+    val encode_labelDetailsSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.snippetSupport.foreach: v =>
+        enc.field("snippetSupport", v, encode_snippetSupport)
+      a.commitCharactersSupport.foreach: v =>
+        enc.field("commitCharactersSupport", v, encode_commitCharactersSupport)
+      a.documentationFormat.foreach: v =>
+        enc.field("documentationFormat", v, encode_documentationFormat)
+      a.deprecatedSupport.foreach: v =>
+        enc.field("deprecatedSupport", v, encode_deprecatedSupport)
+      a.preselectSupport.foreach: v =>
+        enc.field("preselectSupport", v, encode_preselectSupport)
+      a.tagSupport.foreach: v =>
+        enc.field("tagSupport", v, encode_tagSupport)
+      a.insertReplaceSupport.foreach: v =>
+        enc.field("insertReplaceSupport", v, encode_insertReplaceSupport)
+      a.resolveSupport.foreach: v =>
+        enc.field("resolveSupport", v, encode_resolveSupport)
+      a.insertTextModeSupport.foreach: v =>
+        enc.field("insertTextModeSupport", v, encode_insertTextModeSupport)
+      a.labelDetailsSupport.foreach: v =>
+        enc.field("labelDetailsSupport", v, encode_labelDetailsSupport)
+  end toJson
+end structures_ClientCompletionItemOptionsCodec
+
+private[lsp] trait structures_ClientCompletionItemOptionsKindCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCompletionItemOptionsKind] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.CompletionItemKind]] =
+      Decoder.decodeVector(enumerations.CompletionItemKind.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.getOpt("valueSet", decode_valueSet)
+      yield ClientCompletionItemOptionsKind(
+        valueSet
+      )
+  given toJson: Encoder[ClientCompletionItemOptionsKind] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.CompletionItemKind]] =
+      Encoder.encodeVector(enumerations.CompletionItemKind.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      a.valueSet.foreach: v =>
+        enc.field("valueSet", v, encode_valueSet)
+end structures_ClientCompletionItemOptionsKindCodec
+
+private[lsp] trait structures_ClientCompletionItemResolveOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientCompletionItemResolveOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_properties: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    Dec.fromJsonObject: dec =>
+      for properties <- dec.get("properties", decode_properties)
+      yield ClientCompletionItemResolveOptions(
+        properties
+      )
+  given toJson: Encoder[ClientCompletionItemResolveOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_properties: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("properties", a.properties, encode_properties)
+end structures_ClientCompletionItemResolveOptionsCodec
+
+private[lsp] trait structures_ClientDiagnosticsTagOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientDiagnosticsTagOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.DiagnosticTag]] =
+      Decoder.decodeVector(enumerations.DiagnosticTag.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.get("valueSet", decode_valueSet)
+      yield ClientDiagnosticsTagOptions(
+        valueSet
+      )
+  given toJson: Encoder[ClientDiagnosticsTagOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.DiagnosticTag]] =
+      Encoder.encodeVector(enumerations.DiagnosticTag.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("valueSet", a.valueSet, encode_valueSet)
+end structures_ClientDiagnosticsTagOptionsCodec
+
+private[lsp] trait structures_ClientFoldingRangeKindOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientFoldingRangeKindOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.FoldingRangeKind]] =
+      Decoder.decodeVector(enumerations.FoldingRangeKind.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.getOpt("valueSet", decode_valueSet)
+      yield ClientFoldingRangeKindOptions(
+        valueSet
+      )
+  given toJson: Encoder[ClientFoldingRangeKindOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.FoldingRangeKind]] =
+      Encoder.encodeVector(enumerations.FoldingRangeKind.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      a.valueSet.foreach: v =>
+        enc.field("valueSet", v, encode_valueSet)
+end structures_ClientFoldingRangeKindOptionsCodec
+
+private[lsp] trait structures_ClientFoldingRangeOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientFoldingRangeOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_collapsedText: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for collapsedText <- dec.getOpt("collapsedText", decode_collapsedText)
+      yield ClientFoldingRangeOptions(
+        collapsedText
+      )
+  given toJson: Encoder[ClientFoldingRangeOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_collapsedText: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.collapsedText.foreach: v =>
+        enc.field("collapsedText", v, encode_collapsedText)
+end structures_ClientFoldingRangeOptionsCodec
+
+private[lsp] trait structures_ClientInfoCodec:
+  import structures.*
+  given fromJson: Decoder[ClientInfo] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_name: Decoder[String]    = Decoder.decodeString
+    val decode_version: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        name    <- dec.get("name", decode_name)
+        version <- dec.getOpt("version", decode_version)
+      yield ClientInfo(
+        name,
+        version
+      )
+  end fromJson
+  given toJson: Encoder[ClientInfo] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_name: Encoder[String]    = Encoder.encodeString
+    val encode_version: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("name", a.name, encode_name)
+      a.version.foreach: v =>
+        enc.field("version", v, encode_version)
+end structures_ClientInfoCodec
+
+private[lsp] trait structures_ClientInlayHintResolveOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientInlayHintResolveOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_properties: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    Dec.fromJsonObject: dec =>
+      for properties <- dec.get("properties", decode_properties)
+      yield ClientInlayHintResolveOptions(
+        properties
+      )
+  given toJson: Encoder[ClientInlayHintResolveOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_properties: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("properties", a.properties, encode_properties)
+end structures_ClientInlayHintResolveOptionsCodec
+
+private[lsp] trait structures_ClientSemanticTokensRequestFullDeltaCodec:
+  import structures.*
+  given fromJson: Decoder[ClientSemanticTokensRequestFullDelta] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_delta: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for delta <- dec.getOpt("delta", decode_delta)
+      yield ClientSemanticTokensRequestFullDelta(
+        delta
+      )
+  given toJson: Encoder[ClientSemanticTokensRequestFullDelta] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_delta: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.delta.foreach: v =>
+        enc.field("delta", v, encode_delta)
+end structures_ClientSemanticTokensRequestFullDeltaCodec
+
+private[lsp] trait structures_ClientSemanticTokensRequestOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientSemanticTokensRequestOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_range
+        : Decoder[(Boolean | ClientSemanticTokensRequestOptions.S0)] =
+      Dec.union2[Boolean, ClientSemanticTokensRequestOptions.S0](
+        Decoder.decodeBoolean,
+        ClientSemanticTokensRequestOptions.S0.fromJson
+      )
+    val decode_full
+        : Decoder[(Boolean | structures.ClientSemanticTokensRequestFullDelta)] =
+      Dec.union2[Boolean, structures.ClientSemanticTokensRequestFullDelta](
+        Decoder.decodeBoolean,
+        structures.ClientSemanticTokensRequestFullDelta.fromJson
+      )
+    Dec.fromJsonObject: dec =>
+      for
+        range <- dec.getOpt("range", decode_range)
+        full  <- dec.getOpt("full", decode_full)
+      yield ClientSemanticTokensRequestOptions(
+        range,
+        full
+      )
+  end fromJson
+  given toJson: Encoder[ClientSemanticTokensRequestOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_range
+        : Encoder[(Boolean | ClientSemanticTokensRequestOptions.S0)] =
+      Enc.union2[Boolean, ClientSemanticTokensRequestOptions.S0](
+        Encoder.encodeBoolean,
+        ClientSemanticTokensRequestOptions.S0.toJson
+      )
+    val encode_full
+        : Encoder[(Boolean | structures.ClientSemanticTokensRequestFullDelta)] =
+      Enc.union2[Boolean, structures.ClientSemanticTokensRequestFullDelta](
+        Encoder.encodeBoolean,
+        structures.ClientSemanticTokensRequestFullDelta.toJson
+      )
+    Enc.toJsonObject: (enc, a) =>
+      a.range.foreach: v =>
+        enc.field("range", v, encode_range)
+      a.full.foreach: v =>
+        enc.field("full", v, encode_full)
+  end toJson
+end structures_ClientSemanticTokensRequestOptionsCodec
+
+private[lsp] trait structures_ClientSemanticTokensRequestOptions_S0Codec:
+  import structures.ClientSemanticTokensRequestOptions.*
+  given fromJson: Decoder[S0] =
+    Decoder.const(S0())
+  given toJson: Encoder[S0] =
+    Encoder.instance(_ => Json.obj())
+
+private[lsp] trait structures_ClientShowMessageActionItemOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientShowMessageActionItemOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_additionalPropertiesSupport: Decoder[Boolean] =
+      Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for additionalPropertiesSupport <- dec.getOpt(
+          "additionalPropertiesSupport",
+          decode_additionalPropertiesSupport
+        )
+      yield ClientShowMessageActionItemOptions(
+        additionalPropertiesSupport
+      )
+  end fromJson
+  given toJson: Encoder[ClientShowMessageActionItemOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_additionalPropertiesSupport: Encoder[Boolean] =
+      Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.additionalPropertiesSupport.foreach: v =>
+        enc.field(
+          "additionalPropertiesSupport",
+          v,
+          encode_additionalPropertiesSupport
+        )
+  end toJson
+end structures_ClientShowMessageActionItemOptionsCodec
+
+private[lsp] trait structures_ClientSignatureInformationOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientSignatureInformationOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_documentationFormat: Decoder[Vector[enumerations.MarkupKind]] =
+      Decoder.decodeVector(enumerations.MarkupKind.fromJson)
+    val decode_parameterInformation
+        : Decoder[structures.ClientSignatureParameterInformationOptions] =
+      structures.ClientSignatureParameterInformationOptions.fromJson
+    val decode_activeParameterSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_noActiveParameterSupport: Decoder[Boolean] =
+      Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for
+        documentationFormat <- dec.getOpt(
+          "documentationFormat",
+          decode_documentationFormat
+        )
+        parameterInformation <- dec.getOpt(
+          "parameterInformation",
+          decode_parameterInformation
+        )
+        activeParameterSupport <- dec.getOpt(
+          "activeParameterSupport",
+          decode_activeParameterSupport
+        )
+        noActiveParameterSupport <- dec.getOpt(
+          "noActiveParameterSupport",
+          decode_noActiveParameterSupport
+        )
+      yield ClientSignatureInformationOptions(
+        documentationFormat,
+        parameterInformation,
+        activeParameterSupport,
+        noActiveParameterSupport
+      )
+  end fromJson
+  given toJson: Encoder[ClientSignatureInformationOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_documentationFormat: Encoder[Vector[enumerations.MarkupKind]] =
+      Encoder.encodeVector(enumerations.MarkupKind.toJson)
+    val encode_parameterInformation
+        : Encoder[structures.ClientSignatureParameterInformationOptions] =
+      structures.ClientSignatureParameterInformationOptions.toJson
+    val encode_activeParameterSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_noActiveParameterSupport: Encoder[Boolean] =
+      Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.documentationFormat.foreach: v =>
+        enc.field("documentationFormat", v, encode_documentationFormat)
+      a.parameterInformation.foreach: v =>
+        enc.field("parameterInformation", v, encode_parameterInformation)
+      a.activeParameterSupport.foreach: v =>
+        enc.field("activeParameterSupport", v, encode_activeParameterSupport)
+      a.noActiveParameterSupport.foreach: v =>
+        enc.field(
+          "noActiveParameterSupport",
+          v,
+          encode_noActiveParameterSupport
+        )
+  end toJson
+end structures_ClientSignatureInformationOptionsCodec
+
+private[lsp] trait structures_ClientSignatureParameterInformationOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientSignatureParameterInformationOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_labelOffsetSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for labelOffsetSupport <- dec.getOpt(
+          "labelOffsetSupport",
+          decode_labelOffsetSupport
+        )
+      yield ClientSignatureParameterInformationOptions(
+        labelOffsetSupport
+      )
+  end fromJson
+  given toJson: Encoder[ClientSignatureParameterInformationOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_labelOffsetSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.labelOffsetSupport.foreach: v =>
+        enc.field("labelOffsetSupport", v, encode_labelOffsetSupport)
+end structures_ClientSignatureParameterInformationOptionsCodec
+
+private[lsp] trait structures_ClientSymbolKindOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientSymbolKindOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.SymbolKind]] =
+      Decoder.decodeVector(enumerations.SymbolKind.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.getOpt("valueSet", decode_valueSet)
+      yield ClientSymbolKindOptions(
+        valueSet
+      )
+  given toJson: Encoder[ClientSymbolKindOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.SymbolKind]] =
+      Encoder.encodeVector(enumerations.SymbolKind.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      a.valueSet.foreach: v =>
+        enc.field("valueSet", v, encode_valueSet)
+end structures_ClientSymbolKindOptionsCodec
+
+private[lsp] trait structures_ClientSymbolResolveOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientSymbolResolveOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_properties: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    Dec.fromJsonObject: dec =>
+      for properties <- dec.get("properties", decode_properties)
+      yield ClientSymbolResolveOptions(
+        properties
+      )
+  given toJson: Encoder[ClientSymbolResolveOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_properties: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("properties", a.properties, encode_properties)
+end structures_ClientSymbolResolveOptionsCodec
+
+private[lsp] trait structures_ClientSymbolTagOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ClientSymbolTagOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.SymbolTag]] =
+      Decoder.decodeVector(enumerations.SymbolTag.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.get("valueSet", decode_valueSet)
+      yield ClientSymbolTagOptions(
+        valueSet
+      )
+  given toJson: Encoder[ClientSymbolTagOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.SymbolTag]] =
+      Encoder.encodeVector(enumerations.SymbolTag.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("valueSet", a.valueSet, encode_valueSet)
+end structures_ClientSymbolTagOptionsCodec
+
 private[lsp] trait structures_CodeActionCodec:
   import structures.*
   given fromJson: Decoder[CodeAction] =
@@ -1875,14 +2578,16 @@ private[lsp] trait structures_CodeActionCodec:
       enumerations.CodeActionKind.fromJson
     val decode_diagnostics: Decoder[Vector[structures.Diagnostic]] =
       Decoder.decodeVector(structures.Diagnostic.fromJson)
-    val decode_isPreferred: Decoder[Boolean]          = Decoder.decodeBoolean
-    val decode_disabled: Decoder[CodeAction.Disabled] =
-      CodeAction.Disabled.fromJson
+    val decode_isPreferred: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_disabled: Decoder[structures.CodeActionDisabled] =
+      structures.CodeActionDisabled.fromJson
     val decode_edit: Decoder[structures.WorkspaceEdit] =
       structures.WorkspaceEdit.fromJson
     val decode_command: Decoder[structures.Command] =
       structures.Command.fromJson
     val decode_data: Decoder[io.circe.Json] = Decoder.decodeJson
+    val decode_tags: Decoder[Vector[enumerations.CodeActionTag]] =
+      Decoder.decodeVector(enumerations.CodeActionTag.fromJson)
     Dec.fromJsonObject: dec =>
       for
         title       <- dec.get("title", decode_title)
@@ -1893,6 +2598,7 @@ private[lsp] trait structures_CodeActionCodec:
         edit        <- dec.getOpt("edit", decode_edit)
         command     <- dec.getOpt("command", decode_command)
         data        <- dec.getOpt("data", decode_data)
+        tags        <- dec.getOpt("tags", decode_tags)
       yield CodeAction(
         title,
         kind,
@@ -1901,7 +2607,8 @@ private[lsp] trait structures_CodeActionCodec:
         disabled,
         edit,
         command,
-        data
+        data,
+        tags
       )
   end fromJson
   given toJson: Encoder[CodeAction] =
@@ -1911,13 +2618,15 @@ private[lsp] trait structures_CodeActionCodec:
       enumerations.CodeActionKind.toJson
     val encode_diagnostics: Encoder[Vector[structures.Diagnostic]] =
       Encoder.encodeVector(structures.Diagnostic.toJson)
-    val encode_isPreferred: Encoder[Boolean]          = Encoder.encodeBoolean
-    val encode_disabled: Encoder[CodeAction.Disabled] =
-      CodeAction.Disabled.toJson
+    val encode_isPreferred: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_disabled: Encoder[structures.CodeActionDisabled] =
+      structures.CodeActionDisabled.toJson
     val encode_edit: Encoder[structures.WorkspaceEdit] =
       structures.WorkspaceEdit.toJson
     val encode_command: Encoder[structures.Command] = structures.Command.toJson
     val encode_data: Encoder[io.circe.Json]         = Encoder.encodeJson
+    val encode_tags: Encoder[Vector[enumerations.CodeActionTag]] =
+      Encoder.encodeVector(enumerations.CodeActionTag.toJson)
     Enc.toJsonObject: (enc, a) =>
       enc.field("title", a.title, encode_title)
       a.kind.foreach: v =>
@@ -1934,25 +2643,10 @@ private[lsp] trait structures_CodeActionCodec:
         enc.field("command", v, encode_command)
       a.data.foreach: v =>
         enc.field("data", v, encode_data)
+      a.tags.foreach: v =>
+        enc.field("tags", v, encode_tags)
   end toJson
 end structures_CodeActionCodec
-
-private[lsp] trait structures_CodeAction_DisabledCodec:
-  import structures.CodeAction.*
-  given fromJson: Decoder[Disabled] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_reason: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for reason <- dec.get("reason", decode_reason)
-      yield Disabled(
-        reason
-      )
-  given toJson: Encoder[Disabled] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_reason: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("reason", a.reason, encode_reason)
-end structures_CodeAction_DisabledCodec
 
 private[lsp] trait structures_CodeActionClientCapabilitiesCodec:
   import structures.*
@@ -1960,15 +2654,18 @@ private[lsp] trait structures_CodeActionClientCapabilitiesCodec:
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
     val decode_codeActionLiteralSupport
-        : Decoder[CodeActionClientCapabilities.CodeActionLiteralSupport] =
-      CodeActionClientCapabilities.CodeActionLiteralSupport.fromJson
+        : Decoder[structures.ClientCodeActionLiteralOptions] =
+      structures.ClientCodeActionLiteralOptions.fromJson
     val decode_isPreferredSupport: Decoder[Boolean] = Decoder.decodeBoolean
     val decode_disabledSupport: Decoder[Boolean]    = Decoder.decodeBoolean
     val decode_dataSupport: Decoder[Boolean]        = Decoder.decodeBoolean
     val decode_resolveSupport
-        : Decoder[CodeActionClientCapabilities.ResolveSupport] =
-      CodeActionClientCapabilities.ResolveSupport.fromJson
+        : Decoder[structures.ClientCodeActionResolveOptions] =
+      structures.ClientCodeActionResolveOptions.fromJson
     val decode_honorsChangeAnnotations: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_documentationSupport: Decoder[Boolean]    = Decoder.decodeBoolean
+    val decode_tagSupport: Decoder[structures.CodeActionTagOptions] =
+      structures.CodeActionTagOptions.fromJson
     Dec.fromJsonObject: dec =>
       for
         dynamicRegistration <- dec.getOpt(
@@ -1990,6 +2687,11 @@ private[lsp] trait structures_CodeActionClientCapabilitiesCodec:
           "honorsChangeAnnotations",
           decode_honorsChangeAnnotations
         )
+        documentationSupport <- dec.getOpt(
+          "documentationSupport",
+          decode_documentationSupport
+        )
+        tagSupport <- dec.getOpt("tagSupport", decode_tagSupport)
       yield CodeActionClientCapabilities(
         dynamicRegistration,
         codeActionLiteralSupport,
@@ -1997,22 +2699,27 @@ private[lsp] trait structures_CodeActionClientCapabilitiesCodec:
         disabledSupport,
         dataSupport,
         resolveSupport,
-        honorsChangeAnnotations
+        honorsChangeAnnotations,
+        documentationSupport,
+        tagSupport
       )
   end fromJson
   given toJson: Encoder[CodeActionClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
     val encode_codeActionLiteralSupport
-        : Encoder[CodeActionClientCapabilities.CodeActionLiteralSupport] =
-      CodeActionClientCapabilities.CodeActionLiteralSupport.toJson
+        : Encoder[structures.ClientCodeActionLiteralOptions] =
+      structures.ClientCodeActionLiteralOptions.toJson
     val encode_isPreferredSupport: Encoder[Boolean] = Encoder.encodeBoolean
     val encode_disabledSupport: Encoder[Boolean]    = Encoder.encodeBoolean
     val encode_dataSupport: Encoder[Boolean]        = Encoder.encodeBoolean
     val encode_resolveSupport
-        : Encoder[CodeActionClientCapabilities.ResolveSupport] =
-      CodeActionClientCapabilities.ResolveSupport.toJson
+        : Encoder[structures.ClientCodeActionResolveOptions] =
+      structures.ClientCodeActionResolveOptions.toJson
     val encode_honorsChangeAnnotations: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_documentationSupport: Encoder[Boolean]    = Encoder.encodeBoolean
+    val encode_tagSupport: Encoder[structures.CodeActionTagOptions] =
+      structures.CodeActionTagOptions.toJson
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
@@ -2032,68 +2739,12 @@ private[lsp] trait structures_CodeActionClientCapabilitiesCodec:
         enc.field("resolveSupport", v, encode_resolveSupport)
       a.honorsChangeAnnotations.foreach: v =>
         enc.field("honorsChangeAnnotations", v, encode_honorsChangeAnnotations)
+      a.documentationSupport.foreach: v =>
+        enc.field("documentationSupport", v, encode_documentationSupport)
+      a.tagSupport.foreach: v =>
+        enc.field("tagSupport", v, encode_tagSupport)
   end toJson
 end structures_CodeActionClientCapabilitiesCodec
-
-private[lsp] trait structures_CodeActionClientCapabilities_CodeActionLiteralSupportCodec:
-  import structures.CodeActionClientCapabilities.*
-  given fromJson: Decoder[CodeActionLiteralSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_codeActionKind
-        : Decoder[CodeActionLiteralSupport.CodeActionKind] =
-      CodeActionLiteralSupport.CodeActionKind.fromJson
-    Dec.fromJsonObject: dec =>
-      for codeActionKind <- dec.get("codeActionKind", decode_codeActionKind)
-      yield CodeActionLiteralSupport(
-        codeActionKind
-      )
-  end fromJson
-  given toJson: Encoder[CodeActionLiteralSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_codeActionKind
-        : Encoder[CodeActionLiteralSupport.CodeActionKind] =
-      CodeActionLiteralSupport.CodeActionKind.toJson
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("codeActionKind", a.codeActionKind, encode_codeActionKind)
-end structures_CodeActionClientCapabilities_CodeActionLiteralSupportCodec
-
-private[lsp] trait structures_CodeActionClientCapabilities_CodeActionLiteralSupport_CodeActionKindCodec:
-  import structures.CodeActionClientCapabilities.CodeActionLiteralSupport.*
-  given fromJson: Decoder[CodeActionKind] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.CodeActionKind]] =
-      Decoder.decodeVector(enumerations.CodeActionKind.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.get("valueSet", decode_valueSet)
-      yield CodeActionKind(
-        valueSet
-      )
-  given toJson: Encoder[CodeActionKind] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.CodeActionKind]] =
-      Encoder.encodeVector(enumerations.CodeActionKind.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("valueSet", a.valueSet, encode_valueSet)
-end structures_CodeActionClientCapabilities_CodeActionLiteralSupport_CodeActionKindCodec
-
-private[lsp] trait structures_CodeActionClientCapabilities_ResolveSupportCodec:
-  import structures.CodeActionClientCapabilities.*
-  given fromJson: Decoder[ResolveSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_properties: Decoder[Vector[String]] =
-      Decoder.decodeVector(Decoder.decodeString)
-    Dec.fromJsonObject: dec =>
-      for properties <- dec.get("properties", decode_properties)
-      yield ResolveSupport(
-        properties
-      )
-  given toJson: Encoder[ResolveSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_properties: Encoder[Vector[String]] =
-      Encoder.encodeVector(Encoder.encodeString)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("properties", a.properties, encode_properties)
-end structures_CodeActionClientCapabilities_ResolveSupportCodec
 
 private[lsp] trait structures_CodeActionContextCodec:
   import structures.*
@@ -2133,17 +2784,65 @@ private[lsp] trait structures_CodeActionContextCodec:
   end toJson
 end structures_CodeActionContextCodec
 
+private[lsp] trait structures_CodeActionDisabledCodec:
+  import structures.*
+  given fromJson: Decoder[CodeActionDisabled] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_reason: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for reason <- dec.get("reason", decode_reason)
+      yield CodeActionDisabled(
+        reason
+      )
+  given toJson: Encoder[CodeActionDisabled] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_reason: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("reason", a.reason, encode_reason)
+end structures_CodeActionDisabledCodec
+
+private[lsp] trait structures_CodeActionKindDocumentationCodec:
+  import structures.*
+  given fromJson: Decoder[CodeActionKindDocumentation] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_kind: Decoder[enumerations.CodeActionKind] =
+      enumerations.CodeActionKind.fromJson
+    val decode_command: Decoder[structures.Command] =
+      structures.Command.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        kind    <- dec.get("kind", decode_kind)
+        command <- dec.get("command", decode_command)
+      yield CodeActionKindDocumentation(
+        kind,
+        command
+      )
+  end fromJson
+  given toJson: Encoder[CodeActionKindDocumentation] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_kind: Encoder[enumerations.CodeActionKind] =
+      enumerations.CodeActionKind.toJson
+    val encode_command: Encoder[structures.Command] = structures.Command.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("kind", a.kind, encode_kind)
+      enc.field("command", a.command, encode_command)
+end structures_CodeActionKindDocumentationCodec
+
 private[lsp] trait structures_CodeActionOptionsCodec:
   import structures.*
   given fromJson: Decoder[CodeActionOptions] =
     // cache all decoders for this type when fromJson first initialised
     val decode_codeActionKinds: Decoder[Vector[enumerations.CodeActionKind]] =
       Decoder.decodeVector(enumerations.CodeActionKind.fromJson)
+    val decode_documentation
+        : Decoder[Vector[structures.CodeActionKindDocumentation]] =
+      Decoder.decodeVector(structures.CodeActionKindDocumentation.fromJson)
     val decode_resolveProvider: Decoder[Boolean]  = Decoder.decodeBoolean
     val decode_workDoneProgress: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
         codeActionKinds <- dec.getOpt("codeActionKinds", decode_codeActionKinds)
+        documentation   <- dec.getOpt("documentation", decode_documentation)
         resolveProvider <- dec.getOpt("resolveProvider", decode_resolveProvider)
         workDoneProgress <- dec.getOpt(
           "workDoneProgress",
@@ -2151,6 +2850,7 @@ private[lsp] trait structures_CodeActionOptionsCodec:
         )
       yield CodeActionOptions(
         codeActionKinds,
+        documentation,
         resolveProvider,
         workDoneProgress
       )
@@ -2159,11 +2859,16 @@ private[lsp] trait structures_CodeActionOptionsCodec:
     // cache all encoders for this type when toJson first initialised
     val encode_codeActionKinds: Encoder[Vector[enumerations.CodeActionKind]] =
       Encoder.encodeVector(enumerations.CodeActionKind.toJson)
+    val encode_documentation
+        : Encoder[Vector[structures.CodeActionKindDocumentation]] =
+      Encoder.encodeVector(structures.CodeActionKindDocumentation.toJson)
     val encode_resolveProvider: Encoder[Boolean]  = Encoder.encodeBoolean
     val encode_workDoneProgress: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.codeActionKinds.foreach: v =>
         enc.field("codeActionKinds", v, encode_codeActionKinds)
+      a.documentation.foreach: v =>
+        enc.field("documentation", v, encode_documentation)
       a.resolveProvider.foreach: v =>
         enc.field("resolveProvider", v, encode_resolveProvider)
       a.workDoneProgress.foreach: v =>
@@ -2232,6 +2937,9 @@ private[lsp] trait structures_CodeActionRegistrationOptionsCodec:
       aliases.DocumentSelector.fromJson
     val decode_codeActionKinds: Decoder[Vector[enumerations.CodeActionKind]] =
       Decoder.decodeVector(enumerations.CodeActionKind.fromJson)
+    val decode_documentation
+        : Decoder[Vector[structures.CodeActionKindDocumentation]] =
+      Decoder.decodeVector(structures.CodeActionKindDocumentation.fromJson)
     val decode_resolveProvider: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
@@ -2240,10 +2948,12 @@ private[lsp] trait structures_CodeActionRegistrationOptionsCodec:
           decode_documentSelector
         )
         codeActionKinds <- dec.getOpt("codeActionKinds", decode_codeActionKinds)
+        documentation   <- dec.getOpt("documentation", decode_documentation)
         resolveProvider <- dec.getOpt("resolveProvider", decode_resolveProvider)
       yield CodeActionRegistrationOptions(
         documentSelector,
         codeActionKinds,
+        documentation,
         resolveProvider
       )
   end fromJson
@@ -2253,16 +2963,40 @@ private[lsp] trait structures_CodeActionRegistrationOptionsCodec:
       aliases.DocumentSelector.toJson
     val encode_codeActionKinds: Encoder[Vector[enumerations.CodeActionKind]] =
       Encoder.encodeVector(enumerations.CodeActionKind.toJson)
+    val encode_documentation
+        : Encoder[Vector[structures.CodeActionKindDocumentation]] =
+      Encoder.encodeVector(structures.CodeActionKindDocumentation.toJson)
     val encode_resolveProvider: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.documentSelector.foreach: v =>
         enc.field("documentSelector", v, encode_documentSelector)
       a.codeActionKinds.foreach: v =>
         enc.field("codeActionKinds", v, encode_codeActionKinds)
+      a.documentation.foreach: v =>
+        enc.field("documentation", v, encode_documentation)
       a.resolveProvider.foreach: v =>
         enc.field("resolveProvider", v, encode_resolveProvider)
   end toJson
 end structures_CodeActionRegistrationOptionsCodec
+
+private[lsp] trait structures_CodeActionTagOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[CodeActionTagOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.CodeActionTag]] =
+      Decoder.decodeVector(enumerations.CodeActionTag.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.get("valueSet", decode_valueSet)
+      yield CodeActionTagOptions(
+        valueSet
+      )
+  given toJson: Encoder[CodeActionTagOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.CodeActionTag]] =
+      Encoder.encodeVector(enumerations.CodeActionTag.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("valueSet", a.valueSet, encode_valueSet)
+end structures_CodeActionTagOptionsCodec
 
 private[lsp] trait structures_CodeDescriptionCodec:
   import structures.*
@@ -2319,21 +3053,33 @@ private[lsp] trait structures_CodeLensClientCapabilitiesCodec:
   given fromJson: Decoder[CodeLensClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_resolveSupport
+        : Decoder[structures.ClientCodeLensResolveOptions] =
+      structures.ClientCodeLensResolveOptions.fromJson
     Dec.fromJsonObject: dec =>
-      for dynamicRegistration <- dec.getOpt(
+      for
+        dynamicRegistration <- dec.getOpt(
           "dynamicRegistration",
           decode_dynamicRegistration
         )
+        resolveSupport <- dec.getOpt("resolveSupport", decode_resolveSupport)
       yield CodeLensClientCapabilities(
-        dynamicRegistration
+        dynamicRegistration,
+        resolveSupport
       )
   end fromJson
   given toJson: Encoder[CodeLensClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_resolveSupport
+        : Encoder[structures.ClientCodeLensResolveOptions] =
+      structures.ClientCodeLensResolveOptions.toJson
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
+      a.resolveSupport.foreach: v =>
+        enc.field("resolveSupport", v, encode_resolveSupport)
+  end toJson
 end structures_CodeLensClientCapabilitiesCodec
 
 private[lsp] trait structures_CodeLensOptionsCodec:
@@ -2610,16 +3356,19 @@ private[lsp] trait structures_CommandCodec:
   given fromJson: Decoder[Command] =
     // cache all decoders for this type when fromJson first initialised
     val decode_title: Decoder[String]                    = Decoder.decodeString
+    val decode_tooltip: Decoder[String]                  = Decoder.decodeString
     val decode_command: Decoder[String]                  = Decoder.decodeString
     val decode_arguments: Decoder[Vector[io.circe.Json]] =
       Decoder.decodeVector(Decoder.decodeJson)
     Dec.fromJsonObject: dec =>
       for
         title     <- dec.get("title", decode_title)
+        tooltip   <- dec.getOpt("tooltip", decode_tooltip)
         command   <- dec.get("command", decode_command)
         arguments <- dec.getOpt("arguments", decode_arguments)
       yield Command(
         title,
+        tooltip,
         command,
         arguments
       )
@@ -2627,11 +3376,14 @@ private[lsp] trait structures_CommandCodec:
   given toJson: Encoder[Command] =
     // cache all encoders for this type when toJson first initialised
     val encode_title: Encoder[String]                    = Encoder.encodeString
+    val encode_tooltip: Encoder[String]                  = Encoder.encodeString
     val encode_command: Encoder[String]                  = Encoder.encodeString
     val encode_arguments: Encoder[Vector[io.circe.Json]] =
       Encoder.encodeVector(Encoder.encodeJson)
     Enc.toJsonObject: (enc, a) =>
       enc.field("title", a.title, encode_title)
+      a.tooltip.foreach: v =>
+        enc.field("tooltip", v, encode_tooltip)
       enc.field("command", a.command, encode_command)
       a.arguments.foreach: v =>
         enc.field("arguments", v, encode_arguments)
@@ -2643,18 +3395,16 @@ private[lsp] trait structures_CompletionClientCapabilitiesCodec:
   given fromJson: Decoder[CompletionClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_completionItem
-        : Decoder[CompletionClientCapabilities.CompletionItem] =
-      CompletionClientCapabilities.CompletionItem.fromJson
+    val decode_completionItem: Decoder[structures.ClientCompletionItemOptions] =
+      structures.ClientCompletionItemOptions.fromJson
     val decode_completionItemKind
-        : Decoder[CompletionClientCapabilities.CompletionItemKind] =
-      CompletionClientCapabilities.CompletionItemKind.fromJson
+        : Decoder[structures.ClientCompletionItemOptionsKind] =
+      structures.ClientCompletionItemOptionsKind.fromJson
     val decode_insertTextMode: Decoder[enumerations.InsertTextMode] =
       enumerations.InsertTextMode.fromJson
     val decode_contextSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_completionList
-        : Decoder[CompletionClientCapabilities.CompletionList] =
-      CompletionClientCapabilities.CompletionList.fromJson
+    val decode_completionList: Decoder[structures.CompletionListCapabilities] =
+      structures.CompletionListCapabilities.fromJson
     Dec.fromJsonObject: dec =>
       for
         dynamicRegistration <- dec.getOpt(
@@ -2681,18 +3431,16 @@ private[lsp] trait structures_CompletionClientCapabilitiesCodec:
   given toJson: Encoder[CompletionClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_completionItem
-        : Encoder[CompletionClientCapabilities.CompletionItem] =
-      CompletionClientCapabilities.CompletionItem.toJson
+    val encode_completionItem: Encoder[structures.ClientCompletionItemOptions] =
+      structures.ClientCompletionItemOptions.toJson
     val encode_completionItemKind
-        : Encoder[CompletionClientCapabilities.CompletionItemKind] =
-      CompletionClientCapabilities.CompletionItemKind.toJson
+        : Encoder[structures.ClientCompletionItemOptionsKind] =
+      structures.ClientCompletionItemOptionsKind.toJson
     val encode_insertTextMode: Encoder[enumerations.InsertTextMode] =
       enumerations.InsertTextMode.toJson
     val encode_contextSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_completionList
-        : Encoder[CompletionClientCapabilities.CompletionList] =
-      CompletionClientCapabilities.CompletionList.toJson
+    val encode_completionList: Encoder[structures.CompletionListCapabilities] =
+      structures.CompletionListCapabilities.toJson
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
@@ -2708,209 +3456,6 @@ private[lsp] trait structures_CompletionClientCapabilitiesCodec:
         enc.field("completionList", v, encode_completionList)
   end toJson
 end structures_CompletionClientCapabilitiesCodec
-
-private[lsp] trait structures_CompletionClientCapabilities_CompletionItemCodec:
-  import structures.CompletionClientCapabilities.*
-  given fromJson: Decoder[CompletionItem] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_snippetSupport: Decoder[Boolean]          = Decoder.decodeBoolean
-    val decode_commitCharactersSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_documentationFormat: Decoder[Vector[enumerations.MarkupKind]] =
-      Decoder.decodeVector(enumerations.MarkupKind.fromJson)
-    val decode_deprecatedSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_preselectSupport: Decoder[Boolean]  = Decoder.decodeBoolean
-    val decode_tagSupport: Decoder[CompletionItem.TagSupport] =
-      CompletionItem.TagSupport.fromJson
-    val decode_insertReplaceSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_resolveSupport: Decoder[CompletionItem.ResolveSupport] =
-      CompletionItem.ResolveSupport.fromJson
-    val decode_insertTextModeSupport
-        : Decoder[CompletionItem.InsertTextModeSupport] =
-      CompletionItem.InsertTextModeSupport.fromJson
-    val decode_labelDetailsSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for
-        snippetSupport <- dec.getOpt("snippetSupport", decode_snippetSupport)
-        commitCharactersSupport <- dec.getOpt(
-          "commitCharactersSupport",
-          decode_commitCharactersSupport
-        )
-        documentationFormat <- dec.getOpt(
-          "documentationFormat",
-          decode_documentationFormat
-        )
-        deprecatedSupport <- dec.getOpt(
-          "deprecatedSupport",
-          decode_deprecatedSupport
-        )
-        preselectSupport <- dec.getOpt(
-          "preselectSupport",
-          decode_preselectSupport
-        )
-        tagSupport           <- dec.getOpt("tagSupport", decode_tagSupport)
-        insertReplaceSupport <- dec.getOpt(
-          "insertReplaceSupport",
-          decode_insertReplaceSupport
-        )
-        resolveSupport <- dec.getOpt("resolveSupport", decode_resolveSupport)
-        insertTextModeSupport <- dec.getOpt(
-          "insertTextModeSupport",
-          decode_insertTextModeSupport
-        )
-        labelDetailsSupport <- dec.getOpt(
-          "labelDetailsSupport",
-          decode_labelDetailsSupport
-        )
-      yield CompletionItem(
-        snippetSupport,
-        commitCharactersSupport,
-        documentationFormat,
-        deprecatedSupport,
-        preselectSupport,
-        tagSupport,
-        insertReplaceSupport,
-        resolveSupport,
-        insertTextModeSupport,
-        labelDetailsSupport
-      )
-  end fromJson
-  given toJson: Encoder[CompletionItem] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_snippetSupport: Encoder[Boolean]          = Encoder.encodeBoolean
-    val encode_commitCharactersSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_documentationFormat: Encoder[Vector[enumerations.MarkupKind]] =
-      Encoder.encodeVector(enumerations.MarkupKind.toJson)
-    val encode_deprecatedSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_preselectSupport: Encoder[Boolean]  = Encoder.encodeBoolean
-    val encode_tagSupport: Encoder[CompletionItem.TagSupport] =
-      CompletionItem.TagSupport.toJson
-    val encode_insertReplaceSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_resolveSupport: Encoder[CompletionItem.ResolveSupport] =
-      CompletionItem.ResolveSupport.toJson
-    val encode_insertTextModeSupport
-        : Encoder[CompletionItem.InsertTextModeSupport] =
-      CompletionItem.InsertTextModeSupport.toJson
-    val encode_labelDetailsSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.snippetSupport.foreach: v =>
-        enc.field("snippetSupport", v, encode_snippetSupport)
-      a.commitCharactersSupport.foreach: v =>
-        enc.field("commitCharactersSupport", v, encode_commitCharactersSupport)
-      a.documentationFormat.foreach: v =>
-        enc.field("documentationFormat", v, encode_documentationFormat)
-      a.deprecatedSupport.foreach: v =>
-        enc.field("deprecatedSupport", v, encode_deprecatedSupport)
-      a.preselectSupport.foreach: v =>
-        enc.field("preselectSupport", v, encode_preselectSupport)
-      a.tagSupport.foreach: v =>
-        enc.field("tagSupport", v, encode_tagSupport)
-      a.insertReplaceSupport.foreach: v =>
-        enc.field("insertReplaceSupport", v, encode_insertReplaceSupport)
-      a.resolveSupport.foreach: v =>
-        enc.field("resolveSupport", v, encode_resolveSupport)
-      a.insertTextModeSupport.foreach: v =>
-        enc.field("insertTextModeSupport", v, encode_insertTextModeSupport)
-      a.labelDetailsSupport.foreach: v =>
-        enc.field("labelDetailsSupport", v, encode_labelDetailsSupport)
-  end toJson
-end structures_CompletionClientCapabilities_CompletionItemCodec
-
-private[lsp] trait structures_CompletionClientCapabilities_CompletionItem_TagSupportCodec:
-  import structures.CompletionClientCapabilities.CompletionItem.*
-  given fromJson: Decoder[TagSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.CompletionItemTag]] =
-      Decoder.decodeVector(enumerations.CompletionItemTag.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.get("valueSet", decode_valueSet)
-      yield TagSupport(
-        valueSet
-      )
-  given toJson: Encoder[TagSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.CompletionItemTag]] =
-      Encoder.encodeVector(enumerations.CompletionItemTag.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("valueSet", a.valueSet, encode_valueSet)
-end structures_CompletionClientCapabilities_CompletionItem_TagSupportCodec
-
-private[lsp] trait structures_CompletionClientCapabilities_CompletionItem_ResolveSupportCodec:
-  import structures.CompletionClientCapabilities.CompletionItem.*
-  given fromJson: Decoder[ResolveSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_properties: Decoder[Vector[String]] =
-      Decoder.decodeVector(Decoder.decodeString)
-    Dec.fromJsonObject: dec =>
-      for properties <- dec.get("properties", decode_properties)
-      yield ResolveSupport(
-        properties
-      )
-  given toJson: Encoder[ResolveSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_properties: Encoder[Vector[String]] =
-      Encoder.encodeVector(Encoder.encodeString)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("properties", a.properties, encode_properties)
-end structures_CompletionClientCapabilities_CompletionItem_ResolveSupportCodec
-
-private[lsp] trait structures_CompletionClientCapabilities_CompletionItem_InsertTextModeSupportCodec:
-  import structures.CompletionClientCapabilities.CompletionItem.*
-  given fromJson: Decoder[InsertTextModeSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.InsertTextMode]] =
-      Decoder.decodeVector(enumerations.InsertTextMode.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.get("valueSet", decode_valueSet)
-      yield InsertTextModeSupport(
-        valueSet
-      )
-  given toJson: Encoder[InsertTextModeSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.InsertTextMode]] =
-      Encoder.encodeVector(enumerations.InsertTextMode.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("valueSet", a.valueSet, encode_valueSet)
-end structures_CompletionClientCapabilities_CompletionItem_InsertTextModeSupportCodec
-
-private[lsp] trait structures_CompletionClientCapabilities_CompletionItemKindCodec:
-  import structures.CompletionClientCapabilities.*
-  given fromJson: Decoder[CompletionItemKind] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.CompletionItemKind]] =
-      Decoder.decodeVector(enumerations.CompletionItemKind.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.getOpt("valueSet", decode_valueSet)
-      yield CompletionItemKind(
-        valueSet
-      )
-  given toJson: Encoder[CompletionItemKind] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.CompletionItemKind]] =
-      Encoder.encodeVector(enumerations.CompletionItemKind.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.valueSet.foreach: v =>
-        enc.field("valueSet", v, encode_valueSet)
-end structures_CompletionClientCapabilities_CompletionItemKindCodec
-
-private[lsp] trait structures_CompletionClientCapabilities_CompletionListCodec:
-  import structures.CompletionClientCapabilities.*
-  given fromJson: Decoder[CompletionList] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_itemDefaults: Decoder[Vector[String]] =
-      Decoder.decodeVector(Decoder.decodeString)
-    Dec.fromJsonObject: dec =>
-      for itemDefaults <- dec.getOpt("itemDefaults", decode_itemDefaults)
-      yield CompletionList(
-        itemDefaults
-      )
-  given toJson: Encoder[CompletionList] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_itemDefaults: Encoder[Vector[String]] =
-      Encoder.encodeVector(Encoder.encodeString)
-    Enc.toJsonObject: (enc, a) =>
-      a.itemDefaults.foreach: v =>
-        enc.field("itemDefaults", v, encode_itemDefaults)
-end structures_CompletionClientCapabilities_CompletionListCodec
 
 private[lsp] trait structures_CompletionContextCodec:
   import structures.*
@@ -3112,6 +3657,107 @@ private[lsp] trait structures_CompletionItemCodec:
   end toJson
 end structures_CompletionItemCodec
 
+private[lsp] trait structures_CompletionItemApplyKindsCodec:
+  import structures.*
+  given fromJson: Decoder[CompletionItemApplyKinds] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_commitCharacters: Decoder[enumerations.ApplyKind] =
+      enumerations.ApplyKind.fromJson
+    val decode_data: Decoder[enumerations.ApplyKind] =
+      enumerations.ApplyKind.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        commitCharacters <- dec.getOpt(
+          "commitCharacters",
+          decode_commitCharacters
+        )
+        data <- dec.getOpt("data", decode_data)
+      yield CompletionItemApplyKinds(
+        commitCharacters,
+        data
+      )
+  end fromJson
+  given toJson: Encoder[CompletionItemApplyKinds] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_commitCharacters: Encoder[enumerations.ApplyKind] =
+      enumerations.ApplyKind.toJson
+    val encode_data: Encoder[enumerations.ApplyKind] =
+      enumerations.ApplyKind.toJson
+    Enc.toJsonObject: (enc, a) =>
+      a.commitCharacters.foreach: v =>
+        enc.field("commitCharacters", v, encode_commitCharacters)
+      a.data.foreach: v =>
+        enc.field("data", v, encode_data)
+  end toJson
+end structures_CompletionItemApplyKindsCodec
+
+private[lsp] trait structures_CompletionItemDefaultsCodec:
+  import structures.*
+  given fromJson: Decoder[CompletionItemDefaults] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_commitCharacters: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    val decode_editRange
+        : Decoder[(structures.Range | structures.EditRangeWithInsertReplace)] =
+      Dec.union2[structures.Range, structures.EditRangeWithInsertReplace](
+        structures.Range.fromJson,
+        structures.EditRangeWithInsertReplace.fromJson
+      )
+    val decode_insertTextFormat: Decoder[enumerations.InsertTextFormat] =
+      enumerations.InsertTextFormat.fromJson
+    val decode_insertTextMode: Decoder[enumerations.InsertTextMode] =
+      enumerations.InsertTextMode.fromJson
+    val decode_data: Decoder[io.circe.Json] = Decoder.decodeJson
+    Dec.fromJsonObject: dec =>
+      for
+        commitCharacters <- dec.getOpt(
+          "commitCharacters",
+          decode_commitCharacters
+        )
+        editRange        <- dec.getOpt("editRange", decode_editRange)
+        insertTextFormat <- dec.getOpt(
+          "insertTextFormat",
+          decode_insertTextFormat
+        )
+        insertTextMode <- dec.getOpt("insertTextMode", decode_insertTextMode)
+        data           <- dec.getOpt("data", decode_data)
+      yield CompletionItemDefaults(
+        commitCharacters,
+        editRange,
+        insertTextFormat,
+        insertTextMode,
+        data
+      )
+  end fromJson
+  given toJson: Encoder[CompletionItemDefaults] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_commitCharacters: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    val encode_editRange
+        : Encoder[(structures.Range | structures.EditRangeWithInsertReplace)] =
+      Enc.union2[structures.Range, structures.EditRangeWithInsertReplace](
+        structures.Range.toJson,
+        structures.EditRangeWithInsertReplace.toJson
+      )
+    val encode_insertTextFormat: Encoder[enumerations.InsertTextFormat] =
+      enumerations.InsertTextFormat.toJson
+    val encode_insertTextMode: Encoder[enumerations.InsertTextMode] =
+      enumerations.InsertTextMode.toJson
+    val encode_data: Encoder[io.circe.Json] = Encoder.encodeJson
+    Enc.toJsonObject: (enc, a) =>
+      a.commitCharacters.foreach: v =>
+        enc.field("commitCharacters", v, encode_commitCharacters)
+      a.editRange.foreach: v =>
+        enc.field("editRange", v, encode_editRange)
+      a.insertTextFormat.foreach: v =>
+        enc.field("insertTextFormat", v, encode_insertTextFormat)
+      a.insertTextMode.foreach: v =>
+        enc.field("insertTextMode", v, encode_insertTextMode)
+      a.data.foreach: v =>
+        enc.field("data", v, encode_data)
+  end toJson
+end structures_CompletionItemDefaultsCodec
+
 private[lsp] trait structures_CompletionItemLabelDetailsCodec:
   import structures.*
   given fromJson: Decoder[CompletionItemLabelDetails] =
@@ -3138,129 +3784,99 @@ private[lsp] trait structures_CompletionItemLabelDetailsCodec:
         enc.field("description", v, encode_description)
 end structures_CompletionItemLabelDetailsCodec
 
+private[lsp] trait structures_CompletionItemTagOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[CompletionItemTagOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_valueSet: Decoder[Vector[enumerations.CompletionItemTag]] =
+      Decoder.decodeVector(enumerations.CompletionItemTag.fromJson)
+    Dec.fromJsonObject: dec =>
+      for valueSet <- dec.get("valueSet", decode_valueSet)
+      yield CompletionItemTagOptions(
+        valueSet
+      )
+  given toJson: Encoder[CompletionItemTagOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_valueSet: Encoder[Vector[enumerations.CompletionItemTag]] =
+      Encoder.encodeVector(enumerations.CompletionItemTag.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("valueSet", a.valueSet, encode_valueSet)
+end structures_CompletionItemTagOptionsCodec
+
 private[lsp] trait structures_CompletionListCodec:
   import structures.*
   given fromJson: Decoder[CompletionList] =
     // cache all decoders for this type when fromJson first initialised
     val decode_isIncomplete: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_itemDefaults: Decoder[CompletionList.ItemDefaults] =
-      CompletionList.ItemDefaults.fromJson
+    val decode_itemDefaults: Decoder[structures.CompletionItemDefaults] =
+      structures.CompletionItemDefaults.fromJson
+    val decode_applyKind: Decoder[structures.CompletionItemApplyKinds] =
+      structures.CompletionItemApplyKinds.fromJson
     val decode_items: Decoder[Vector[structures.CompletionItem]] =
       Decoder.decodeVector(structures.CompletionItem.fromJson)
     Dec.fromJsonObject: dec =>
       for
         isIncomplete <- dec.get("isIncomplete", decode_isIncomplete)
         itemDefaults <- dec.getOpt("itemDefaults", decode_itemDefaults)
+        applyKind    <- dec.getOpt("applyKind", decode_applyKind)
         items        <- dec.get("items", decode_items)
       yield CompletionList(
         isIncomplete,
         itemDefaults,
+        applyKind,
         items
       )
   end fromJson
   given toJson: Encoder[CompletionList] =
     // cache all encoders for this type when toJson first initialised
     val encode_isIncomplete: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_itemDefaults: Encoder[CompletionList.ItemDefaults] =
-      CompletionList.ItemDefaults.toJson
+    val encode_itemDefaults: Encoder[structures.CompletionItemDefaults] =
+      structures.CompletionItemDefaults.toJson
+    val encode_applyKind: Encoder[structures.CompletionItemApplyKinds] =
+      structures.CompletionItemApplyKinds.toJson
     val encode_items: Encoder[Vector[structures.CompletionItem]] =
       Encoder.encodeVector(structures.CompletionItem.toJson)
     Enc.toJsonObject: (enc, a) =>
       enc.field("isIncomplete", a.isIncomplete, encode_isIncomplete)
       a.itemDefaults.foreach: v =>
         enc.field("itemDefaults", v, encode_itemDefaults)
+      a.applyKind.foreach: v =>
+        enc.field("applyKind", v, encode_applyKind)
       enc.field("items", a.items, encode_items)
   end toJson
 end structures_CompletionListCodec
 
-private[lsp] trait structures_CompletionList_ItemDefaultsCodec:
-  import structures.CompletionList.*
-  given fromJson: Decoder[ItemDefaults] =
+private[lsp] trait structures_CompletionListCapabilitiesCodec:
+  import structures.*
+  given fromJson: Decoder[CompletionListCapabilities] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_commitCharacters: Decoder[Vector[String]] =
+    val decode_itemDefaults: Decoder[Vector[String]] =
       Decoder.decodeVector(Decoder.decodeString)
-    val decode_editRange: Decoder[(structures.Range | ItemDefaults.S0)] =
-      Dec.union2[structures.Range, ItemDefaults.S0](
-        structures.Range.fromJson,
-        ItemDefaults.S0.fromJson
-      )
-    val decode_insertTextFormat: Decoder[enumerations.InsertTextFormat] =
-      enumerations.InsertTextFormat.fromJson
-    val decode_insertTextMode: Decoder[enumerations.InsertTextMode] =
-      enumerations.InsertTextMode.fromJson
-    val decode_data: Decoder[io.circe.Json] = Decoder.decodeJson
+    val decode_applyKindSupport: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
-        commitCharacters <- dec.getOpt(
-          "commitCharacters",
-          decode_commitCharacters
+        itemDefaults     <- dec.getOpt("itemDefaults", decode_itemDefaults)
+        applyKindSupport <- dec.getOpt(
+          "applyKindSupport",
+          decode_applyKindSupport
         )
-        editRange        <- dec.getOpt("editRange", decode_editRange)
-        insertTextFormat <- dec.getOpt(
-          "insertTextFormat",
-          decode_insertTextFormat
-        )
-        insertTextMode <- dec.getOpt("insertTextMode", decode_insertTextMode)
-        data           <- dec.getOpt("data", decode_data)
-      yield ItemDefaults(
-        commitCharacters,
-        editRange,
-        insertTextFormat,
-        insertTextMode,
-        data
+      yield CompletionListCapabilities(
+        itemDefaults,
+        applyKindSupport
       )
   end fromJson
-  given toJson: Encoder[ItemDefaults] =
+  given toJson: Encoder[CompletionListCapabilities] =
     // cache all encoders for this type when toJson first initialised
-    val encode_commitCharacters: Encoder[Vector[String]] =
+    val encode_itemDefaults: Encoder[Vector[String]] =
       Encoder.encodeVector(Encoder.encodeString)
-    val encode_editRange: Encoder[(structures.Range | ItemDefaults.S0)] =
-      Enc.union2[structures.Range, ItemDefaults.S0](
-        structures.Range.toJson,
-        ItemDefaults.S0.toJson
-      )
-    val encode_insertTextFormat: Encoder[enumerations.InsertTextFormat] =
-      enumerations.InsertTextFormat.toJson
-    val encode_insertTextMode: Encoder[enumerations.InsertTextMode] =
-      enumerations.InsertTextMode.toJson
-    val encode_data: Encoder[io.circe.Json] = Encoder.encodeJson
+    val encode_applyKindSupport: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
-      a.commitCharacters.foreach: v =>
-        enc.field("commitCharacters", v, encode_commitCharacters)
-      a.editRange.foreach: v =>
-        enc.field("editRange", v, encode_editRange)
-      a.insertTextFormat.foreach: v =>
-        enc.field("insertTextFormat", v, encode_insertTextFormat)
-      a.insertTextMode.foreach: v =>
-        enc.field("insertTextMode", v, encode_insertTextMode)
-      a.data.foreach: v =>
-        enc.field("data", v, encode_data)
+      a.itemDefaults.foreach: v =>
+        enc.field("itemDefaults", v, encode_itemDefaults)
+      a.applyKindSupport.foreach: v =>
+        enc.field("applyKindSupport", v, encode_applyKindSupport)
   end toJson
-end structures_CompletionList_ItemDefaultsCodec
-
-private[lsp] trait structures_CompletionList_ItemDefaults_S0Codec:
-  import structures.CompletionList.ItemDefaults.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_insert: Decoder[structures.Range]  = structures.Range.fromJson
-    val decode_replace: Decoder[structures.Range] = structures.Range.fromJson
-    Dec.fromJsonObject: dec =>
-      for
-        insert  <- dec.get("insert", decode_insert)
-        replace <- dec.get("replace", decode_replace)
-      yield S0(
-        insert,
-        replace
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_insert: Encoder[structures.Range]  = structures.Range.toJson
-    val encode_replace: Encoder[structures.Range] = structures.Range.toJson
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("insert", a.insert, encode_insert)
-      enc.field("replace", a.replace, encode_replace)
-end structures_CompletionList_ItemDefaults_S0Codec
+end structures_CompletionListCapabilitiesCodec
 
 private[lsp] trait structures_CompletionOptionsCodec:
   import structures.*
@@ -3271,8 +3887,8 @@ private[lsp] trait structures_CompletionOptionsCodec:
     val decode_allCommitCharacters: Decoder[Vector[String]] =
       Decoder.decodeVector(Decoder.decodeString)
     val decode_resolveProvider: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_completionItem: Decoder[CompletionOptions.CompletionItem] =
-      CompletionOptions.CompletionItem.fromJson
+    val decode_completionItem: Decoder[structures.ServerCompletionItemOptions] =
+      structures.ServerCompletionItemOptions.fromJson
     val decode_workDoneProgress: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
@@ -3305,8 +3921,8 @@ private[lsp] trait structures_CompletionOptionsCodec:
     val encode_allCommitCharacters: Encoder[Vector[String]] =
       Encoder.encodeVector(Encoder.encodeString)
     val encode_resolveProvider: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_completionItem: Encoder[CompletionOptions.CompletionItem] =
-      CompletionOptions.CompletionItem.toJson
+    val encode_completionItem: Encoder[structures.ServerCompletionItemOptions] =
+      structures.ServerCompletionItemOptions.toJson
     val encode_workDoneProgress: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.triggerCharacters.foreach: v =>
@@ -3321,28 +3937,6 @@ private[lsp] trait structures_CompletionOptionsCodec:
         enc.field("workDoneProgress", v, encode_workDoneProgress)
   end toJson
 end structures_CompletionOptionsCodec
-
-private[lsp] trait structures_CompletionOptions_CompletionItemCodec:
-  import structures.CompletionOptions.*
-  given fromJson: Decoder[CompletionItem] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_labelDetailsSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for labelDetailsSupport <- dec.getOpt(
-          "labelDetailsSupport",
-          decode_labelDetailsSupport
-        )
-      yield CompletionItem(
-        labelDetailsSupport
-      )
-  end fromJson
-  given toJson: Encoder[CompletionItem] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_labelDetailsSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.labelDetailsSupport.foreach: v =>
-        enc.field("labelDetailsSupport", v, encode_labelDetailsSupport)
-end structures_CompletionOptions_CompletionItemCodec
 
 private[lsp] trait structures_CompletionParamsCodec:
   import structures.*
@@ -3411,9 +4005,8 @@ private[lsp] trait structures_CompletionRegistrationOptionsCodec:
     val decode_allCommitCharacters: Decoder[Vector[String]] =
       Decoder.decodeVector(Decoder.decodeString)
     val decode_resolveProvider: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_completionItem
-        : Decoder[CompletionRegistrationOptions.CompletionItem] =
-      CompletionRegistrationOptions.CompletionItem.fromJson
+    val decode_completionItem: Decoder[structures.ServerCompletionItemOptions] =
+      structures.ServerCompletionItemOptions.fromJson
     Dec.fromJsonObject: dec =>
       for
         documentSelector <- dec.getOpt(
@@ -3447,9 +4040,8 @@ private[lsp] trait structures_CompletionRegistrationOptionsCodec:
     val encode_allCommitCharacters: Encoder[Vector[String]] =
       Encoder.encodeVector(Encoder.encodeString)
     val encode_resolveProvider: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_completionItem
-        : Encoder[CompletionRegistrationOptions.CompletionItem] =
-      CompletionRegistrationOptions.CompletionItem.toJson
+    val encode_completionItem: Encoder[structures.ServerCompletionItemOptions] =
+      structures.ServerCompletionItemOptions.toJson
     Enc.toJsonObject: (enc, a) =>
       a.documentSelector.foreach: v =>
         enc.field("documentSelector", v, encode_documentSelector)
@@ -3463,28 +4055,6 @@ private[lsp] trait structures_CompletionRegistrationOptionsCodec:
         enc.field("completionItem", v, encode_completionItem)
   end toJson
 end structures_CompletionRegistrationOptionsCodec
-
-private[lsp] trait structures_CompletionRegistrationOptions_CompletionItemCodec:
-  import structures.CompletionRegistrationOptions.*
-  given fromJson: Decoder[CompletionItem] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_labelDetailsSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for labelDetailsSupport <- dec.getOpt(
-          "labelDetailsSupport",
-          decode_labelDetailsSupport
-        )
-      yield CompletionItem(
-        labelDetailsSupport
-      )
-  end fromJson
-  given toJson: Encoder[CompletionItem] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_labelDetailsSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.labelDetailsSupport.foreach: v =>
-        enc.field("labelDetailsSupport", v, encode_labelDetailsSupport)
-end structures_CompletionRegistrationOptions_CompletionItemCodec
 
 private[lsp] trait structures_ConfigurationItemCodec:
   import structures.*
@@ -3971,8 +4541,12 @@ private[lsp] trait structures_DiagnosticCodec:
       Dec.union2[Int, String](Decoder.decodeInt, Decoder.decodeString)
     val decode_codeDescription: Decoder[structures.CodeDescription] =
       structures.CodeDescription.fromJson
-    val decode_source: Decoder[String]  = Decoder.decodeString
-    val decode_message: Decoder[String] = Decoder.decodeString
+    val decode_source: Decoder[String] = Decoder.decodeString
+    val decode_message: Decoder[(String | structures.MarkupContent)] =
+      Dec.union2[String, structures.MarkupContent](
+        Decoder.decodeString,
+        structures.MarkupContent.fromJson
+      )
     val decode_tags: Decoder[Vector[enumerations.DiagnosticTag]] =
       Decoder.decodeVector(enumerations.DiagnosticTag.fromJson)
     val decode_relatedInformation
@@ -4014,8 +4588,12 @@ private[lsp] trait structures_DiagnosticCodec:
       Enc.union2[Int, String](Encoder.encodeInt, Encoder.encodeString)
     val encode_codeDescription: Encoder[structures.CodeDescription] =
       structures.CodeDescription.toJson
-    val encode_source: Encoder[String]  = Encoder.encodeString
-    val encode_message: Encoder[String] = Encoder.encodeString
+    val encode_source: Encoder[String] = Encoder.encodeString
+    val encode_message: Encoder[(String | structures.MarkupContent)] =
+      Enc.union2[String, structures.MarkupContent](
+        Encoder.encodeString,
+        structures.MarkupContent.toJson
+      )
     val encode_tags: Encoder[Vector[enumerations.DiagnosticTag]] =
       Encoder.encodeVector(enumerations.DiagnosticTag.toJson)
     val encode_relatedInformation
@@ -4048,6 +4626,12 @@ private[lsp] trait structures_DiagnosticClientCapabilitiesCodec:
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean]    = Decoder.decodeBoolean
     val decode_relatedDocumentSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_markupMessageSupport: Decoder[Boolean]   = Decoder.decodeBoolean
+    val decode_relatedInformation: Decoder[Boolean]     = Decoder.decodeBoolean
+    val decode_tagSupport: Decoder[structures.ClientDiagnosticsTagOptions] =
+      structures.ClientDiagnosticsTagOptions.fromJson
+    val decode_codeDescriptionSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_dataSupport: Decoder[Boolean]            = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
         dynamicRegistration <- dec.getOpt(
@@ -4058,20 +4642,56 @@ private[lsp] trait structures_DiagnosticClientCapabilitiesCodec:
           "relatedDocumentSupport",
           decode_relatedDocumentSupport
         )
+        markupMessageSupport <- dec.getOpt(
+          "markupMessageSupport",
+          decode_markupMessageSupport
+        )
+        relatedInformation <- dec.getOpt(
+          "relatedInformation",
+          decode_relatedInformation
+        )
+        tagSupport             <- dec.getOpt("tagSupport", decode_tagSupport)
+        codeDescriptionSupport <- dec.getOpt(
+          "codeDescriptionSupport",
+          decode_codeDescriptionSupport
+        )
+        dataSupport <- dec.getOpt("dataSupport", decode_dataSupport)
       yield DiagnosticClientCapabilities(
         dynamicRegistration,
-        relatedDocumentSupport
+        relatedDocumentSupport,
+        markupMessageSupport,
+        relatedInformation,
+        tagSupport,
+        codeDescriptionSupport,
+        dataSupport
       )
   end fromJson
   given toJson: Encoder[DiagnosticClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean]    = Encoder.encodeBoolean
     val encode_relatedDocumentSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_markupMessageSupport: Encoder[Boolean]   = Encoder.encodeBoolean
+    val encode_relatedInformation: Encoder[Boolean]     = Encoder.encodeBoolean
+    val encode_tagSupport: Encoder[structures.ClientDiagnosticsTagOptions] =
+      structures.ClientDiagnosticsTagOptions.toJson
+    val encode_codeDescriptionSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_dataSupport: Encoder[Boolean]            = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
       a.relatedDocumentSupport.foreach: v =>
         enc.field("relatedDocumentSupport", v, encode_relatedDocumentSupport)
+      a.markupMessageSupport.foreach: v =>
+        enc.field("markupMessageSupport", v, encode_markupMessageSupport)
+      a.relatedInformation.foreach: v =>
+        enc.field("relatedInformation", v, encode_relatedInformation)
+      a.tagSupport.foreach: v =>
+        enc.field("tagSupport", v, encode_tagSupport)
+      a.codeDescriptionSupport.foreach: v =>
+        enc.field("codeDescriptionSupport", v, encode_codeDescriptionSupport)
+      a.dataSupport.foreach: v =>
+        enc.field("dataSupport", v, encode_dataSupport)
+  end toJson
 end structures_DiagnosticClientCapabilitiesCodec
 
 private[lsp] trait structures_DiagnosticOptionsCodec:
@@ -4254,6 +4874,53 @@ private[lsp] trait structures_DiagnosticWorkspaceClientCapabilitiesCodec:
       a.refreshSupport.foreach: v =>
         enc.field("refreshSupport", v, encode_refreshSupport)
 end structures_DiagnosticWorkspaceClientCapabilitiesCodec
+
+private[lsp] trait structures_DiagnosticsCapabilitiesCodec:
+  import structures.*
+  given fromJson: Decoder[DiagnosticsCapabilities] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_relatedInformation: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_tagSupport: Decoder[structures.ClientDiagnosticsTagOptions] =
+      structures.ClientDiagnosticsTagOptions.fromJson
+    val decode_codeDescriptionSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_dataSupport: Decoder[Boolean]            = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for
+        relatedInformation <- dec.getOpt(
+          "relatedInformation",
+          decode_relatedInformation
+        )
+        tagSupport             <- dec.getOpt("tagSupport", decode_tagSupport)
+        codeDescriptionSupport <- dec.getOpt(
+          "codeDescriptionSupport",
+          decode_codeDescriptionSupport
+        )
+        dataSupport <- dec.getOpt("dataSupport", decode_dataSupport)
+      yield DiagnosticsCapabilities(
+        relatedInformation,
+        tagSupport,
+        codeDescriptionSupport,
+        dataSupport
+      )
+  end fromJson
+  given toJson: Encoder[DiagnosticsCapabilities] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_relatedInformation: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_tagSupport: Encoder[structures.ClientDiagnosticsTagOptions] =
+      structures.ClientDiagnosticsTagOptions.toJson
+    val encode_codeDescriptionSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_dataSupport: Encoder[Boolean]            = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.relatedInformation.foreach: v =>
+        enc.field("relatedInformation", v, encode_relatedInformation)
+      a.tagSupport.foreach: v =>
+        enc.field("tagSupport", v, encode_tagSupport)
+      a.codeDescriptionSupport.foreach: v =>
+        enc.field("codeDescriptionSupport", v, encode_codeDescriptionSupport)
+      a.dataSupport.foreach: v =>
+        enc.field("dataSupport", v, encode_dataSupport)
+  end toJson
+end structures_DiagnosticsCapabilitiesCodec
 
 private[lsp] trait structures_DidChangeConfigurationClientCapabilitiesCodec:
   import structures.*
@@ -5434,41 +6101,55 @@ private[lsp] trait structures_DocumentRangeFormattingClientCapabilitiesCodec:
   given fromJson: Decoder[DocumentRangeFormattingClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_rangesSupport: Decoder[Boolean]       = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
-      for dynamicRegistration <- dec.getOpt(
+      for
+        dynamicRegistration <- dec.getOpt(
           "dynamicRegistration",
           decode_dynamicRegistration
         )
+        rangesSupport <- dec.getOpt("rangesSupport", decode_rangesSupport)
       yield DocumentRangeFormattingClientCapabilities(
-        dynamicRegistration
+        dynamicRegistration,
+        rangesSupport
       )
   end fromJson
   given toJson: Encoder[DocumentRangeFormattingClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_rangesSupport: Encoder[Boolean]       = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
+      a.rangesSupport.foreach: v =>
+        enc.field("rangesSupport", v, encode_rangesSupport)
 end structures_DocumentRangeFormattingClientCapabilitiesCodec
 
 private[lsp] trait structures_DocumentRangeFormattingOptionsCodec:
   import structures.*
   given fromJson: Decoder[DocumentRangeFormattingOptions] =
     // cache all decoders for this type when fromJson first initialised
+    val decode_rangesSupport: Decoder[Boolean]    = Decoder.decodeBoolean
     val decode_workDoneProgress: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
-      for workDoneProgress <- dec.getOpt(
+      for
+        rangesSupport    <- dec.getOpt("rangesSupport", decode_rangesSupport)
+        workDoneProgress <- dec.getOpt(
           "workDoneProgress",
           decode_workDoneProgress
         )
       yield DocumentRangeFormattingOptions(
+        rangesSupport,
         workDoneProgress
       )
   end fromJson
   given toJson: Encoder[DocumentRangeFormattingOptions] =
     // cache all encoders for this type when toJson first initialised
+    val encode_rangesSupport: Encoder[Boolean]    = Encoder.encodeBoolean
     val encode_workDoneProgress: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
+      a.rangesSupport.foreach: v =>
+        enc.field("rangesSupport", v, encode_rangesSupport)
       a.workDoneProgress.foreach: v =>
         enc.field("workDoneProgress", v, encode_workDoneProgress)
 end structures_DocumentRangeFormattingOptionsCodec
@@ -5521,23 +6202,75 @@ private[lsp] trait structures_DocumentRangeFormattingRegistrationOptionsCodec:
     // cache all decoders for this type when fromJson first initialised
     val decode_documentSelector: Decoder[aliases.DocumentSelector] =
       aliases.DocumentSelector.fromJson
+    val decode_rangesSupport: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
-      for documentSelector <- dec.getOpt(
+      for
+        documentSelector <- dec.getOpt(
           "documentSelector",
           decode_documentSelector
         )
+        rangesSupport <- dec.getOpt("rangesSupport", decode_rangesSupport)
       yield DocumentRangeFormattingRegistrationOptions(
-        documentSelector
+        documentSelector,
+        rangesSupport
       )
   end fromJson
   given toJson: Encoder[DocumentRangeFormattingRegistrationOptions] =
     // cache all encoders for this type when toJson first initialised
     val encode_documentSelector: Encoder[aliases.DocumentSelector] =
       aliases.DocumentSelector.toJson
+    val encode_rangesSupport: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.documentSelector.foreach: v =>
         enc.field("documentSelector", v, encode_documentSelector)
+      a.rangesSupport.foreach: v =>
+        enc.field("rangesSupport", v, encode_rangesSupport)
+  end toJson
 end structures_DocumentRangeFormattingRegistrationOptionsCodec
+
+private[lsp] trait structures_DocumentRangesFormattingParamsCodec:
+  import structures.*
+  given fromJson: Decoder[DocumentRangesFormattingParams] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_textDocument: Decoder[structures.TextDocumentIdentifier] =
+      structures.TextDocumentIdentifier.fromJson
+    val decode_ranges: Decoder[Vector[structures.Range]] =
+      Decoder.decodeVector(structures.Range.fromJson)
+    val decode_options: Decoder[structures.FormattingOptions] =
+      structures.FormattingOptions.fromJson
+    val decode_workDoneToken: Decoder[aliases.ProgressToken] =
+      aliases.ProgressToken.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        textDocument  <- dec.get("textDocument", decode_textDocument)
+        ranges        <- dec.get("ranges", decode_ranges)
+        options       <- dec.get("options", decode_options)
+        workDoneToken <- dec.getOpt("workDoneToken", decode_workDoneToken)
+      yield DocumentRangesFormattingParams(
+        textDocument,
+        ranges,
+        options,
+        workDoneToken
+      )
+  end fromJson
+  given toJson: Encoder[DocumentRangesFormattingParams] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_textDocument: Encoder[structures.TextDocumentIdentifier] =
+      structures.TextDocumentIdentifier.toJson
+    val encode_ranges: Encoder[Vector[structures.Range]] =
+      Encoder.encodeVector(structures.Range.toJson)
+    val encode_options: Encoder[structures.FormattingOptions] =
+      structures.FormattingOptions.toJson
+    val encode_workDoneToken: Encoder[aliases.ProgressToken] =
+      aliases.ProgressToken.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("textDocument", a.textDocument, encode_textDocument)
+      enc.field("ranges", a.ranges, encode_ranges)
+      enc.field("options", a.options, encode_options)
+      a.workDoneToken.foreach: v =>
+        enc.field("workDoneToken", v, encode_workDoneToken)
+  end toJson
+end structures_DocumentRangesFormattingParamsCodec
 
 private[lsp] trait structures_DocumentSymbolCodec:
   import structures.*
@@ -5611,14 +6344,12 @@ private[lsp] trait structures_DocumentSymbolClientCapabilitiesCodec:
   given fromJson: Decoder[DocumentSymbolClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_symbolKind
-        : Decoder[DocumentSymbolClientCapabilities.SymbolKind] =
-      DocumentSymbolClientCapabilities.SymbolKind.fromJson
+    val decode_symbolKind: Decoder[structures.ClientSymbolKindOptions] =
+      structures.ClientSymbolKindOptions.fromJson
     val decode_hierarchicalDocumentSymbolSupport: Decoder[Boolean] =
       Decoder.decodeBoolean
-    val decode_tagSupport
-        : Decoder[DocumentSymbolClientCapabilities.TagSupport] =
-      DocumentSymbolClientCapabilities.TagSupport.fromJson
+    val decode_tagSupport: Decoder[structures.ClientSymbolTagOptions] =
+      structures.ClientSymbolTagOptions.fromJson
     val decode_labelSupport: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
@@ -5644,14 +6375,12 @@ private[lsp] trait structures_DocumentSymbolClientCapabilitiesCodec:
   given toJson: Encoder[DocumentSymbolClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_symbolKind
-        : Encoder[DocumentSymbolClientCapabilities.SymbolKind] =
-      DocumentSymbolClientCapabilities.SymbolKind.toJson
+    val encode_symbolKind: Encoder[structures.ClientSymbolKindOptions] =
+      structures.ClientSymbolKindOptions.toJson
     val encode_hierarchicalDocumentSymbolSupport: Encoder[Boolean] =
       Encoder.encodeBoolean
-    val encode_tagSupport
-        : Encoder[DocumentSymbolClientCapabilities.TagSupport] =
-      DocumentSymbolClientCapabilities.TagSupport.toJson
+    val encode_tagSupport: Encoder[structures.ClientSymbolTagOptions] =
+      structures.ClientSymbolTagOptions.toJson
     val encode_labelSupport: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
@@ -5670,45 +6399,6 @@ private[lsp] trait structures_DocumentSymbolClientCapabilitiesCodec:
         enc.field("labelSupport", v, encode_labelSupport)
   end toJson
 end structures_DocumentSymbolClientCapabilitiesCodec
-
-private[lsp] trait structures_DocumentSymbolClientCapabilities_SymbolKindCodec:
-  import structures.DocumentSymbolClientCapabilities.*
-  given fromJson: Decoder[SymbolKind] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.SymbolKind]] =
-      Decoder.decodeVector(enumerations.SymbolKind.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.getOpt("valueSet", decode_valueSet)
-      yield SymbolKind(
-        valueSet
-      )
-  given toJson: Encoder[SymbolKind] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.SymbolKind]] =
-      Encoder.encodeVector(enumerations.SymbolKind.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.valueSet.foreach: v =>
-        enc.field("valueSet", v, encode_valueSet)
-end structures_DocumentSymbolClientCapabilities_SymbolKindCodec
-
-private[lsp] trait structures_DocumentSymbolClientCapabilities_TagSupportCodec:
-  import structures.DocumentSymbolClientCapabilities.*
-  given fromJson: Decoder[TagSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.SymbolTag]] =
-      Decoder.decodeVector(enumerations.SymbolTag.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.get("valueSet", decode_valueSet)
-      yield TagSupport(
-        valueSet
-      )
-  given toJson: Encoder[TagSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.SymbolTag]] =
-      Encoder.encodeVector(enumerations.SymbolTag.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("valueSet", a.valueSet, encode_valueSet)
-end structures_DocumentSymbolClientCapabilities_TagSupportCodec
 
 private[lsp] trait structures_DocumentSymbolOptionsCodec:
   import structures.*
@@ -5811,6 +6501,30 @@ private[lsp] trait structures_DocumentSymbolRegistrationOptionsCodec:
         enc.field("label", v, encode_label)
   end toJson
 end structures_DocumentSymbolRegistrationOptionsCodec
+
+private[lsp] trait structures_EditRangeWithInsertReplaceCodec:
+  import structures.*
+  given fromJson: Decoder[EditRangeWithInsertReplace] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_insert: Decoder[structures.Range]  = structures.Range.fromJson
+    val decode_replace: Decoder[structures.Range] = structures.Range.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        insert  <- dec.get("insert", decode_insert)
+        replace <- dec.get("replace", decode_replace)
+      yield EditRangeWithInsertReplace(
+        insert,
+        replace
+      )
+  end fromJson
+  given toJson: Encoder[EditRangeWithInsertReplace] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_insert: Encoder[structures.Range]  = structures.Range.toJson
+    val encode_replace: Encoder[structures.Range] = structures.Range.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("insert", a.insert, encode_insert)
+      enc.field("replace", a.replace, encode_replace)
+end structures_EditRangeWithInsertReplaceCodec
 
 private[lsp] trait structures_ExecuteCommandClientCapabilitiesCodec:
   import structures.*
@@ -5948,7 +6662,7 @@ private[lsp] trait structures_FileCreateCodec:
   import structures.*
   given fromJson: Decoder[FileCreate] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_uri: Decoder[String] = Decoder.decodeString
+    val decode_uri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
     Dec.fromJsonObject: dec =>
       for uri <- dec.get("uri", decode_uri)
       yield FileCreate(
@@ -5956,7 +6670,7 @@ private[lsp] trait structures_FileCreateCodec:
       )
   given toJson: Encoder[FileCreate] =
     // cache all encoders for this type when toJson first initialised
-    val encode_uri: Encoder[String] = Encoder.encodeString
+    val encode_uri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
     Enc.toJsonObject: (enc, a) =>
       enc.field("uri", a.uri, encode_uri)
 end structures_FileCreateCodec
@@ -5965,7 +6679,7 @@ private[lsp] trait structures_FileDeleteCodec:
   import structures.*
   given fromJson: Decoder[FileDelete] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_uri: Decoder[String] = Decoder.decodeString
+    val decode_uri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
     Dec.fromJsonObject: dec =>
       for uri <- dec.get("uri", decode_uri)
       yield FileDelete(
@@ -5973,7 +6687,7 @@ private[lsp] trait structures_FileDeleteCodec:
       )
   given toJson: Encoder[FileDelete] =
     // cache all encoders for this type when toJson first initialised
-    val encode_uri: Encoder[String] = Encoder.encodeString
+    val encode_uri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
     Enc.toJsonObject: (enc, a) =>
       enc.field("uri", a.uri, encode_uri)
 end structures_FileDeleteCodec
@@ -6237,8 +6951,8 @@ private[lsp] trait structures_FileRenameCodec:
   import structures.*
   given fromJson: Decoder[FileRename] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_oldUri: Decoder[String] = Decoder.decodeString
-    val decode_newUri: Decoder[String] = Decoder.decodeString
+    val decode_oldUri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
+    val decode_newUri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
     Dec.fromJsonObject: dec =>
       for
         oldUri <- dec.get("oldUri", decode_oldUri)
@@ -6250,8 +6964,8 @@ private[lsp] trait structures_FileRenameCodec:
   end fromJson
   given toJson: Encoder[FileRename] =
     // cache all encoders for this type when toJson first initialised
-    val encode_oldUri: Encoder[String] = Encoder.encodeString
-    val encode_newUri: Encoder[String] = Encoder.encodeString
+    val encode_oldUri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
+    val encode_newUri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
     Enc.toJsonObject: (enc, a) =>
       enc.field("oldUri", a.oldUri, encode_oldUri)
       enc.field("newUri", a.newUri, encode_newUri)
@@ -6346,11 +7060,10 @@ private[lsp] trait structures_FoldingRangeClientCapabilitiesCodec:
     val decode_rangeLimit: Decoder[runtime.uinteger] = uinteger.fromJson
     val decode_lineFoldingOnly: Decoder[Boolean]     = Decoder.decodeBoolean
     val decode_foldingRangeKind
-        : Decoder[FoldingRangeClientCapabilities.FoldingRangeKind] =
-      FoldingRangeClientCapabilities.FoldingRangeKind.fromJson
-    val decode_foldingRange
-        : Decoder[FoldingRangeClientCapabilities.FoldingRange] =
-      FoldingRangeClientCapabilities.FoldingRange.fromJson
+        : Decoder[structures.ClientFoldingRangeKindOptions] =
+      structures.ClientFoldingRangeKindOptions.fromJson
+    val decode_foldingRange: Decoder[structures.ClientFoldingRangeOptions] =
+      structures.ClientFoldingRangeOptions.fromJson
     Dec.fromJsonObject: dec =>
       for
         dynamicRegistration <- dec.getOpt(
@@ -6378,11 +7091,10 @@ private[lsp] trait structures_FoldingRangeClientCapabilitiesCodec:
     val encode_rangeLimit: Encoder[runtime.uinteger] = uinteger.toJson
     val encode_lineFoldingOnly: Encoder[Boolean]     = Encoder.encodeBoolean
     val encode_foldingRangeKind
-        : Encoder[FoldingRangeClientCapabilities.FoldingRangeKind] =
-      FoldingRangeClientCapabilities.FoldingRangeKind.toJson
-    val encode_foldingRange
-        : Encoder[FoldingRangeClientCapabilities.FoldingRange] =
-      FoldingRangeClientCapabilities.FoldingRange.toJson
+        : Encoder[structures.ClientFoldingRangeKindOptions] =
+      structures.ClientFoldingRangeKindOptions.toJson
+    val encode_foldingRange: Encoder[structures.ClientFoldingRangeOptions] =
+      structures.ClientFoldingRangeOptions.toJson
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
@@ -6396,44 +7108,6 @@ private[lsp] trait structures_FoldingRangeClientCapabilitiesCodec:
         enc.field("foldingRange", v, encode_foldingRange)
   end toJson
 end structures_FoldingRangeClientCapabilitiesCodec
-
-private[lsp] trait structures_FoldingRangeClientCapabilities_FoldingRangeKindCodec:
-  import structures.FoldingRangeClientCapabilities.*
-  given fromJson: Decoder[FoldingRangeKind] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.FoldingRangeKind]] =
-      Decoder.decodeVector(enumerations.FoldingRangeKind.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.getOpt("valueSet", decode_valueSet)
-      yield FoldingRangeKind(
-        valueSet
-      )
-  given toJson: Encoder[FoldingRangeKind] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.FoldingRangeKind]] =
-      Encoder.encodeVector(enumerations.FoldingRangeKind.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.valueSet.foreach: v =>
-        enc.field("valueSet", v, encode_valueSet)
-end structures_FoldingRangeClientCapabilities_FoldingRangeKindCodec
-
-private[lsp] trait structures_FoldingRangeClientCapabilities_FoldingRangeCodec:
-  import structures.FoldingRangeClientCapabilities.*
-  given fromJson: Decoder[FoldingRange] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_collapsedText: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for collapsedText <- dec.getOpt("collapsedText", decode_collapsedText)
-      yield FoldingRange(
-        collapsedText
-      )
-  given toJson: Encoder[FoldingRange] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_collapsedText: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.collapsedText.foreach: v =>
-        enc.field("collapsedText", v, encode_collapsedText)
-end structures_FoldingRangeClientCapabilities_FoldingRangeCodec
 
 private[lsp] trait structures_FoldingRangeOptionsCodec:
   import structures.*
@@ -6530,6 +7204,24 @@ private[lsp] trait structures_FoldingRangeRegistrationOptionsCodec:
   end toJson
 end structures_FoldingRangeRegistrationOptionsCodec
 
+private[lsp] trait structures_FoldingRangeWorkspaceClientCapabilitiesCodec:
+  import structures.*
+  given fromJson: Decoder[FoldingRangeWorkspaceClientCapabilities] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_refreshSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for refreshSupport <- dec.getOpt("refreshSupport", decode_refreshSupport)
+      yield FoldingRangeWorkspaceClientCapabilities(
+        refreshSupport
+      )
+  given toJson: Encoder[FoldingRangeWorkspaceClientCapabilities] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_refreshSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.refreshSupport.foreach: v =>
+        enc.field("refreshSupport", v, encode_refreshSupport)
+end structures_FoldingRangeWorkspaceClientCapabilitiesCodec
+
 private[lsp] trait structures_FormattingOptionsCodec:
   import structures.*
   given fromJson: Decoder[FormattingOptions] =
@@ -6620,8 +7312,8 @@ private[lsp] trait structures_GeneralClientCapabilitiesCodec:
   given fromJson: Decoder[GeneralClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_staleRequestSupport
-        : Decoder[GeneralClientCapabilities.StaleRequestSupport] =
-      GeneralClientCapabilities.StaleRequestSupport.fromJson
+        : Decoder[structures.StaleRequestSupportOptions] =
+      structures.StaleRequestSupportOptions.fromJson
     val decode_regularExpressions
         : Decoder[structures.RegularExpressionsClientCapabilities] =
       structures.RegularExpressionsClientCapabilities.fromJson
@@ -6655,8 +7347,8 @@ private[lsp] trait structures_GeneralClientCapabilitiesCodec:
   given toJson: Encoder[GeneralClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_staleRequestSupport
-        : Encoder[GeneralClientCapabilities.StaleRequestSupport] =
-      GeneralClientCapabilities.StaleRequestSupport.toJson
+        : Encoder[structures.StaleRequestSupportOptions] =
+      structures.StaleRequestSupportOptions.toJson
     val encode_regularExpressions
         : Encoder[structures.RegularExpressionsClientCapabilities] =
       structures.RegularExpressionsClientCapabilities.toJson
@@ -6676,40 +7368,6 @@ private[lsp] trait structures_GeneralClientCapabilitiesCodec:
         enc.field("positionEncodings", v, encode_positionEncodings)
   end toJson
 end structures_GeneralClientCapabilitiesCodec
-
-private[lsp] trait structures_GeneralClientCapabilities_StaleRequestSupportCodec:
-  import structures.GeneralClientCapabilities.*
-  given fromJson: Decoder[StaleRequestSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_cancel: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_retryOnContentModified: Decoder[Vector[String]] =
-      Decoder.decodeVector(Decoder.decodeString)
-    Dec.fromJsonObject: dec =>
-      for
-        cancel                 <- dec.get("cancel", decode_cancel)
-        retryOnContentModified <- dec.get(
-          "retryOnContentModified",
-          decode_retryOnContentModified
-        )
-      yield StaleRequestSupport(
-        cancel,
-        retryOnContentModified
-      )
-  end fromJson
-  given toJson: Encoder[StaleRequestSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_cancel: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_retryOnContentModified: Encoder[Vector[String]] =
-      Encoder.encodeVector(Encoder.encodeString)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("cancel", a.cancel, encode_cancel)
-      enc.field(
-        "retryOnContentModified",
-        a.retryOnContentModified,
-        encode_retryOnContentModified
-      )
-  end toJson
-end structures_GeneralClientCapabilities_StaleRequestSupportCodec
 
 private[lsp] trait structures_HoverCodec:
   import structures.*
@@ -7022,9 +7680,9 @@ private[lsp] trait structures_InitializeParamsCodec:
   import structures.*
   given fromJson: Decoder[InitializeParams] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_processId: Decoder[Int] = Decoder.decodeInt
-    val decode_clientInfo: Decoder[InitializeParams.ClientInfo] =
-      InitializeParams.ClientInfo.fromJson
+    val decode_processId: Decoder[Int]                    = Decoder.decodeInt
+    val decode_clientInfo: Decoder[structures.ClientInfo] =
+      structures.ClientInfo.fromJson
     val decode_locale: Decoder[String]               = Decoder.decodeString
     val decode_rootPath: Decoder[String]             = Decoder.decodeString
     val decode_rootUri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
@@ -7032,8 +7690,8 @@ private[lsp] trait structures_InitializeParamsCodec:
       structures.ClientCapabilities.fromJson
     val decode_initializationOptions: Decoder[io.circe.Json] =
       Decoder.decodeJson
-    val decode_trace: Decoder[enumerations.TraceValues] =
-      enumerations.TraceValues.fromJson
+    val decode_trace: Decoder[enumerations.TraceValue] =
+      enumerations.TraceValue.fromJson
     val decode_workspaceFolders: Decoder[Vector[structures.WorkspaceFolder]] =
       Decoder.decodeVector(structures.WorkspaceFolder.fromJson)
     Dec.fromJsonObject: dec =>
@@ -7067,9 +7725,9 @@ private[lsp] trait structures_InitializeParamsCodec:
   end fromJson
   given toJson: Encoder[InitializeParams] =
     // cache all encoders for this type when toJson first initialised
-    val encode_processId: Encoder[Int] = Encoder.encodeInt
-    val encode_clientInfo: Encoder[InitializeParams.ClientInfo] =
-      InitializeParams.ClientInfo.toJson
+    val encode_processId: Encoder[Int]                    = Encoder.encodeInt
+    val encode_clientInfo: Encoder[structures.ClientInfo] =
+      structures.ClientInfo.toJson
     val encode_locale: Encoder[String]               = Encoder.encodeString
     val encode_rootPath: Encoder[String]             = Encoder.encodeString
     val encode_rootUri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
@@ -7077,8 +7735,8 @@ private[lsp] trait structures_InitializeParamsCodec:
       structures.ClientCapabilities.toJson
     val encode_initializationOptions: Encoder[io.circe.Json] =
       Encoder.encodeJson
-    val encode_trace: Encoder[enumerations.TraceValues] =
-      enumerations.TraceValues.toJson
+    val encode_trace: Encoder[enumerations.TraceValue] =
+      enumerations.TraceValue.toJson
     val encode_workspaceFolders: Encoder[Vector[structures.WorkspaceFolder]] =
       Encoder.encodeVector(structures.WorkspaceFolder.toJson)
     Enc.toJsonObject: (enc, a) =>
@@ -7102,39 +7760,14 @@ private[lsp] trait structures_InitializeParamsCodec:
   end toJson
 end structures_InitializeParamsCodec
 
-private[lsp] trait structures_InitializeParams_ClientInfoCodec:
-  import structures.InitializeParams.*
-  given fromJson: Decoder[ClientInfo] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_name: Decoder[String]    = Decoder.decodeString
-    val decode_version: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        name    <- dec.get("name", decode_name)
-        version <- dec.getOpt("version", decode_version)
-      yield ClientInfo(
-        name,
-        version
-      )
-  end fromJson
-  given toJson: Encoder[ClientInfo] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_name: Encoder[String]    = Encoder.encodeString
-    val encode_version: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("name", a.name, encode_name)
-      a.version.foreach: v =>
-        enc.field("version", v, encode_version)
-end structures_InitializeParams_ClientInfoCodec
-
 private[lsp] trait structures_InitializeResultCodec:
   import structures.*
   given fromJson: Decoder[InitializeResult] =
     // cache all decoders for this type when fromJson first initialised
     val decode_capabilities: Decoder[structures.ServerCapabilities] =
       structures.ServerCapabilities.fromJson
-    val decode_serverInfo: Decoder[InitializeResult.ServerInfo] =
-      InitializeResult.ServerInfo.fromJson
+    val decode_serverInfo: Decoder[structures.ServerInfo] =
+      structures.ServerInfo.fromJson
     Dec.fromJsonObject: dec =>
       for
         capabilities <- dec.get("capabilities", decode_capabilities)
@@ -7148,39 +7781,14 @@ private[lsp] trait structures_InitializeResultCodec:
     // cache all encoders for this type when toJson first initialised
     val encode_capabilities: Encoder[structures.ServerCapabilities] =
       structures.ServerCapabilities.toJson
-    val encode_serverInfo: Encoder[InitializeResult.ServerInfo] =
-      InitializeResult.ServerInfo.toJson
+    val encode_serverInfo: Encoder[structures.ServerInfo] =
+      structures.ServerInfo.toJson
     Enc.toJsonObject: (enc, a) =>
       enc.field("capabilities", a.capabilities, encode_capabilities)
       a.serverInfo.foreach: v =>
         enc.field("serverInfo", v, encode_serverInfo)
   end toJson
 end structures_InitializeResultCodec
-
-private[lsp] trait structures_InitializeResult_ServerInfoCodec:
-  import structures.InitializeResult.*
-  given fromJson: Decoder[ServerInfo] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_name: Decoder[String]    = Decoder.decodeString
-    val decode_version: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        name    <- dec.get("name", decode_name)
-        version <- dec.getOpt("version", decode_version)
-      yield ServerInfo(
-        name,
-        version
-      )
-  end fromJson
-  given toJson: Encoder[ServerInfo] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_name: Encoder[String]    = Encoder.encodeString
-    val encode_version: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("name", a.name, encode_name)
-      a.version.foreach: v =>
-        enc.field("version", v, encode_version)
-end structures_InitializeResult_ServerInfoCodec
 
 private[lsp] trait structures_InitializedParamsCodec:
   import structures.*
@@ -7280,8 +7888,8 @@ private[lsp] trait structures_InlayHintClientCapabilitiesCodec:
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
     val decode_resolveSupport
-        : Decoder[InlayHintClientCapabilities.ResolveSupport] =
-      InlayHintClientCapabilities.ResolveSupport.fromJson
+        : Decoder[structures.ClientInlayHintResolveOptions] =
+      structures.ClientInlayHintResolveOptions.fromJson
     Dec.fromJsonObject: dec =>
       for
         dynamicRegistration <- dec.getOpt(
@@ -7298,8 +7906,8 @@ private[lsp] trait structures_InlayHintClientCapabilitiesCodec:
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
     val encode_resolveSupport
-        : Encoder[InlayHintClientCapabilities.ResolveSupport] =
-      InlayHintClientCapabilities.ResolveSupport.toJson
+        : Encoder[structures.ClientInlayHintResolveOptions] =
+      structures.ClientInlayHintResolveOptions.toJson
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
@@ -7307,25 +7915,6 @@ private[lsp] trait structures_InlayHintClientCapabilitiesCodec:
         enc.field("resolveSupport", v, encode_resolveSupport)
   end toJson
 end structures_InlayHintClientCapabilitiesCodec
-
-private[lsp] trait structures_InlayHintClientCapabilities_ResolveSupportCodec:
-  import structures.InlayHintClientCapabilities.*
-  given fromJson: Decoder[ResolveSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_properties: Decoder[Vector[String]] =
-      Decoder.decodeVector(Decoder.decodeString)
-    Dec.fromJsonObject: dec =>
-      for properties <- dec.get("properties", decode_properties)
-      yield ResolveSupport(
-        properties
-      )
-  given toJson: Encoder[ResolveSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_properties: Encoder[Vector[String]] =
-      Encoder.encodeVector(Encoder.encodeString)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("properties", a.properties, encode_properties)
-end structures_InlayHintClientCapabilities_ResolveSupportCodec
 
 private[lsp] trait structures_InlayHintLabelPartCodec:
   import structures.*
@@ -7495,6 +8084,227 @@ private[lsp] trait structures_InlayHintWorkspaceClientCapabilitiesCodec:
       a.refreshSupport.foreach: v =>
         enc.field("refreshSupport", v, encode_refreshSupport)
 end structures_InlayHintWorkspaceClientCapabilitiesCodec
+
+private[lsp] trait structures_InlineCompletionClientCapabilitiesCodec:
+  import structures.*
+  given fromJson: Decoder[InlineCompletionClientCapabilities] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for dynamicRegistration <- dec.getOpt(
+          "dynamicRegistration",
+          decode_dynamicRegistration
+        )
+      yield InlineCompletionClientCapabilities(
+        dynamicRegistration
+      )
+  end fromJson
+  given toJson: Encoder[InlineCompletionClientCapabilities] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.dynamicRegistration.foreach: v =>
+        enc.field("dynamicRegistration", v, encode_dynamicRegistration)
+end structures_InlineCompletionClientCapabilitiesCodec
+
+private[lsp] trait structures_InlineCompletionContextCodec:
+  import structures.*
+  given fromJson: Decoder[InlineCompletionContext] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_triggerKind: Decoder[enumerations.InlineCompletionTriggerKind] =
+      enumerations.InlineCompletionTriggerKind.fromJson
+    val decode_selectedCompletionInfo
+        : Decoder[structures.SelectedCompletionInfo] =
+      structures.SelectedCompletionInfo.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        triggerKind            <- dec.get("triggerKind", decode_triggerKind)
+        selectedCompletionInfo <- dec.getOpt(
+          "selectedCompletionInfo",
+          decode_selectedCompletionInfo
+        )
+      yield InlineCompletionContext(
+        triggerKind,
+        selectedCompletionInfo
+      )
+  end fromJson
+  given toJson: Encoder[InlineCompletionContext] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_triggerKind: Encoder[enumerations.InlineCompletionTriggerKind] =
+      enumerations.InlineCompletionTriggerKind.toJson
+    val encode_selectedCompletionInfo
+        : Encoder[structures.SelectedCompletionInfo] =
+      structures.SelectedCompletionInfo.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("triggerKind", a.triggerKind, encode_triggerKind)
+      a.selectedCompletionInfo.foreach: v =>
+        enc.field("selectedCompletionInfo", v, encode_selectedCompletionInfo)
+  end toJson
+end structures_InlineCompletionContextCodec
+
+private[lsp] trait structures_InlineCompletionItemCodec:
+  import structures.*
+  given fromJson: Decoder[InlineCompletionItem] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_insertText: Decoder[(String | structures.StringValue)] =
+      Dec.union2[String, structures.StringValue](
+        Decoder.decodeString,
+        structures.StringValue.fromJson
+      )
+    val decode_filterText: Decoder[String]          = Decoder.decodeString
+    val decode_range: Decoder[structures.Range]     = structures.Range.fromJson
+    val decode_command: Decoder[structures.Command] =
+      structures.Command.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        insertText <- dec.get("insertText", decode_insertText)
+        filterText <- dec.getOpt("filterText", decode_filterText)
+        range      <- dec.getOpt("range", decode_range)
+        command    <- dec.getOpt("command", decode_command)
+      yield InlineCompletionItem(
+        insertText,
+        filterText,
+        range,
+        command
+      )
+  end fromJson
+  given toJson: Encoder[InlineCompletionItem] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_insertText: Encoder[(String | structures.StringValue)] =
+      Enc.union2[String, structures.StringValue](
+        Encoder.encodeString,
+        structures.StringValue.toJson
+      )
+    val encode_filterText: Encoder[String]          = Encoder.encodeString
+    val encode_range: Encoder[structures.Range]     = structures.Range.toJson
+    val encode_command: Encoder[structures.Command] = structures.Command.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("insertText", a.insertText, encode_insertText)
+      a.filterText.foreach: v =>
+        enc.field("filterText", v, encode_filterText)
+      a.range.foreach: v =>
+        enc.field("range", v, encode_range)
+      a.command.foreach: v =>
+        enc.field("command", v, encode_command)
+  end toJson
+end structures_InlineCompletionItemCodec
+
+private[lsp] trait structures_InlineCompletionListCodec:
+  import structures.*
+  given fromJson: Decoder[InlineCompletionList] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_items: Decoder[Vector[structures.InlineCompletionItem]] =
+      Decoder.decodeVector(structures.InlineCompletionItem.fromJson)
+    Dec.fromJsonObject: dec =>
+      for items <- dec.get("items", decode_items)
+      yield InlineCompletionList(
+        items
+      )
+  given toJson: Encoder[InlineCompletionList] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_items: Encoder[Vector[structures.InlineCompletionItem]] =
+      Encoder.encodeVector(structures.InlineCompletionItem.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("items", a.items, encode_items)
+end structures_InlineCompletionListCodec
+
+private[lsp] trait structures_InlineCompletionOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[InlineCompletionOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_workDoneProgress: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for workDoneProgress <- dec.getOpt(
+          "workDoneProgress",
+          decode_workDoneProgress
+        )
+      yield InlineCompletionOptions(
+        workDoneProgress
+      )
+  end fromJson
+  given toJson: Encoder[InlineCompletionOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_workDoneProgress: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.workDoneProgress.foreach: v =>
+        enc.field("workDoneProgress", v, encode_workDoneProgress)
+end structures_InlineCompletionOptionsCodec
+
+private[lsp] trait structures_InlineCompletionParamsCodec:
+  import structures.*
+  given fromJson: Decoder[InlineCompletionParams] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_context: Decoder[structures.InlineCompletionContext] =
+      structures.InlineCompletionContext.fromJson
+    val decode_textDocument: Decoder[structures.TextDocumentIdentifier] =
+      structures.TextDocumentIdentifier.fromJson
+    val decode_position: Decoder[structures.Position] =
+      structures.Position.fromJson
+    val decode_workDoneToken: Decoder[aliases.ProgressToken] =
+      aliases.ProgressToken.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        context       <- dec.get("context", decode_context)
+        textDocument  <- dec.get("textDocument", decode_textDocument)
+        position      <- dec.get("position", decode_position)
+        workDoneToken <- dec.getOpt("workDoneToken", decode_workDoneToken)
+      yield InlineCompletionParams(
+        context,
+        textDocument,
+        position,
+        workDoneToken
+      )
+  end fromJson
+  given toJson: Encoder[InlineCompletionParams] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_context: Encoder[structures.InlineCompletionContext] =
+      structures.InlineCompletionContext.toJson
+    val encode_textDocument: Encoder[structures.TextDocumentIdentifier] =
+      structures.TextDocumentIdentifier.toJson
+    val encode_position: Encoder[structures.Position] =
+      structures.Position.toJson
+    val encode_workDoneToken: Encoder[aliases.ProgressToken] =
+      aliases.ProgressToken.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("context", a.context, encode_context)
+      enc.field("textDocument", a.textDocument, encode_textDocument)
+      enc.field("position", a.position, encode_position)
+      a.workDoneToken.foreach: v =>
+        enc.field("workDoneToken", v, encode_workDoneToken)
+  end toJson
+end structures_InlineCompletionParamsCodec
+
+private[lsp] trait structures_InlineCompletionRegistrationOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[InlineCompletionRegistrationOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_documentSelector: Decoder[aliases.DocumentSelector] =
+      aliases.DocumentSelector.fromJson
+    val decode_id: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        documentSelector <- dec.getOpt(
+          "documentSelector",
+          decode_documentSelector
+        )
+        id <- dec.getOpt("id", decode_id)
+      yield InlineCompletionRegistrationOptions(
+        documentSelector,
+        id
+      )
+  end fromJson
+  given toJson: Encoder[InlineCompletionRegistrationOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_documentSelector: Encoder[aliases.DocumentSelector] =
+      aliases.DocumentSelector.toJson
+    val encode_id: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      a.documentSelector.foreach: v =>
+        enc.field("documentSelector", v, encode_documentSelector)
+      a.id.foreach: v =>
+        enc.field("id", v, encode_id)
+  end toJson
+end structures_InlineCompletionRegistrationOptionsCodec
 
 private[lsp] trait structures_InlineValueClientCapabilitiesCodec:
   import structures.*
@@ -7989,6 +8799,23 @@ private[lsp] trait structures_LocationLinkCodec:
   end toJson
 end structures_LocationLinkCodec
 
+private[lsp] trait structures_LocationUriOnlyCodec:
+  import structures.*
+  given fromJson: Decoder[LocationUriOnly] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_uri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
+    Dec.fromJsonObject: dec =>
+      for uri <- dec.get("uri", decode_uri)
+      yield LocationUriOnly(
+        uri
+      )
+  given toJson: Encoder[LocationUriOnly] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_uri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("uri", a.uri, encode_uri)
+end structures_LocationUriOnlyCodec
+
 private[lsp] trait structures_LogMessageParamsCodec:
   import structures.*
   given fromJson: Decoder[LogMessageParams] =
@@ -8073,6 +8900,30 @@ private[lsp] trait structures_MarkdownClientCapabilitiesCodec:
         enc.field("allowedTags", v, encode_allowedTags)
   end toJson
 end structures_MarkdownClientCapabilitiesCodec
+
+private[lsp] trait structures_MarkedStringWithLanguageCodec:
+  import structures.*
+  given fromJson: Decoder[MarkedStringWithLanguage] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_language: Decoder[String] = Decoder.decodeString
+    val decode_value: Decoder[String]    = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        language <- dec.get("language", decode_language)
+        value    <- dec.get("value", decode_value)
+      yield MarkedStringWithLanguage(
+        language,
+        value
+      )
+  end fromJson
+  given toJson: Encoder[MarkedStringWithLanguage] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_language: Encoder[String] = Encoder.encodeString
+    val encode_value: Encoder[String]    = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("language", a.language, encode_language)
+      enc.field("value", a.value, encode_value)
+end structures_MarkedStringWithLanguageCodec
 
 private[lsp] trait structures_MarkupContentCodec:
   import structures.*
@@ -8350,6 +9201,23 @@ private[lsp] trait structures_NotebookCellArrayChangeCodec:
   end toJson
 end structures_NotebookCellArrayChangeCodec
 
+private[lsp] trait structures_NotebookCellLanguageCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookCellLanguage] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_language: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for language <- dec.get("language", decode_language)
+      yield NotebookCellLanguage(
+        language
+      )
+  given toJson: Encoder[NotebookCellLanguage] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_language: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("language", a.language, encode_language)
+end structures_NotebookCellLanguageCodec
+
 private[lsp] trait structures_NotebookCellTextDocumentFilterCodec:
   import structures.*
   given fromJson: Decoder[NotebookCellTextDocumentFilter] =
@@ -8427,75 +9295,9 @@ private[lsp] trait structures_NotebookDocumentCodec:
   end toJson
 end structures_NotebookDocumentCodec
 
-private[lsp] trait structures_NotebookDocumentChangeEventCodec:
+private[lsp] trait structures_NotebookDocumentCellChangeStructureCodec:
   import structures.*
-  given fromJson: Decoder[NotebookDocumentChangeEvent] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_metadata: Decoder[aliases.LSPObject] = aliases.LSPObject.fromJson
-    val decode_cells: Decoder[NotebookDocumentChangeEvent.Cells] =
-      NotebookDocumentChangeEvent.Cells.fromJson
-    Dec.fromJsonObject: dec =>
-      for
-        metadata <- dec.getOpt("metadata", decode_metadata)
-        cells    <- dec.getOpt("cells", decode_cells)
-      yield NotebookDocumentChangeEvent(
-        metadata,
-        cells
-      )
-  end fromJson
-  given toJson: Encoder[NotebookDocumentChangeEvent] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_metadata: Encoder[aliases.LSPObject] = aliases.LSPObject.toJson
-    val encode_cells: Encoder[NotebookDocumentChangeEvent.Cells] =
-      NotebookDocumentChangeEvent.Cells.toJson
-    Enc.toJsonObject: (enc, a) =>
-      a.metadata.foreach: v =>
-        enc.field("metadata", v, encode_metadata)
-      a.cells.foreach: v =>
-        enc.field("cells", v, encode_cells)
-  end toJson
-end structures_NotebookDocumentChangeEventCodec
-
-private[lsp] trait structures_NotebookDocumentChangeEvent_CellsCodec:
-  import structures.NotebookDocumentChangeEvent.*
-  given fromJson: Decoder[Cells] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_structure: Decoder[Cells.Structure] = Cells.Structure.fromJson
-    val decode_data: Decoder[Vector[structures.NotebookCell]] =
-      Decoder.decodeVector(structures.NotebookCell.fromJson)
-    val decode_textContent: Decoder[Vector[Cells.S0]] =
-      Decoder.decodeVector(Cells.S0.fromJson)
-    Dec.fromJsonObject: dec =>
-      for
-        structure   <- dec.getOpt("structure", decode_structure)
-        data        <- dec.getOpt("data", decode_data)
-        textContent <- dec.getOpt("textContent", decode_textContent)
-      yield Cells(
-        structure,
-        data,
-        textContent
-      )
-  end fromJson
-  given toJson: Encoder[Cells] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_structure: Encoder[Cells.Structure] = Cells.Structure.toJson
-    val encode_data: Encoder[Vector[structures.NotebookCell]] =
-      Encoder.encodeVector(structures.NotebookCell.toJson)
-    val encode_textContent: Encoder[Vector[Cells.S0]] =
-      Encoder.encodeVector(Cells.S0.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.structure.foreach: v =>
-        enc.field("structure", v, encode_structure)
-      a.data.foreach: v =>
-        enc.field("data", v, encode_data)
-      a.textContent.foreach: v =>
-        enc.field("textContent", v, encode_textContent)
-  end toJson
-end structures_NotebookDocumentChangeEvent_CellsCodec
-
-private[lsp] trait structures_NotebookDocumentChangeEvent_Cells_StructureCodec:
-  import structures.NotebookDocumentChangeEvent.Cells.*
-  given fromJson: Decoder[Structure] =
+  given fromJson: Decoder[NotebookDocumentCellChangeStructure] =
     // cache all decoders for this type when fromJson first initialised
     val decode_array: Decoder[structures.NotebookCellArrayChange] =
       structures.NotebookCellArrayChange.fromJson
@@ -8508,13 +9310,13 @@ private[lsp] trait structures_NotebookDocumentChangeEvent_Cells_StructureCodec:
         array    <- dec.get("array", decode_array)
         didOpen  <- dec.getOpt("didOpen", decode_didOpen)
         didClose <- dec.getOpt("didClose", decode_didClose)
-      yield Structure(
+      yield NotebookDocumentCellChangeStructure(
         array,
         didOpen,
         didClose
       )
   end fromJson
-  given toJson: Encoder[Structure] =
+  given toJson: Encoder[NotebookDocumentCellChangeStructure] =
     // cache all encoders for this type when toJson first initialised
     val encode_array: Encoder[structures.NotebookCellArrayChange] =
       structures.NotebookCellArrayChange.toJson
@@ -8529,11 +9331,56 @@ private[lsp] trait structures_NotebookDocumentChangeEvent_Cells_StructureCodec:
       a.didClose.foreach: v =>
         enc.field("didClose", v, encode_didClose)
   end toJson
-end structures_NotebookDocumentChangeEvent_Cells_StructureCodec
+end structures_NotebookDocumentCellChangeStructureCodec
 
-private[lsp] trait structures_NotebookDocumentChangeEvent_Cells_S0Codec:
-  import structures.NotebookDocumentChangeEvent.Cells.*
-  given fromJson: Decoder[S0] =
+private[lsp] trait structures_NotebookDocumentCellChangesCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentCellChanges] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_structure
+        : Decoder[structures.NotebookDocumentCellChangeStructure] =
+      structures.NotebookDocumentCellChangeStructure.fromJson
+    val decode_data: Decoder[Vector[structures.NotebookCell]] =
+      Decoder.decodeVector(structures.NotebookCell.fromJson)
+    val decode_textContent
+        : Decoder[Vector[structures.NotebookDocumentCellContentChanges]] =
+      Decoder.decodeVector(
+        structures.NotebookDocumentCellContentChanges.fromJson
+      )
+    Dec.fromJsonObject: dec =>
+      for
+        structure   <- dec.getOpt("structure", decode_structure)
+        data        <- dec.getOpt("data", decode_data)
+        textContent <- dec.getOpt("textContent", decode_textContent)
+      yield NotebookDocumentCellChanges(
+        structure,
+        data,
+        textContent
+      )
+  end fromJson
+  given toJson: Encoder[NotebookDocumentCellChanges] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_structure
+        : Encoder[structures.NotebookDocumentCellChangeStructure] =
+      structures.NotebookDocumentCellChangeStructure.toJson
+    val encode_data: Encoder[Vector[structures.NotebookCell]] =
+      Encoder.encodeVector(structures.NotebookCell.toJson)
+    val encode_textContent
+        : Encoder[Vector[structures.NotebookDocumentCellContentChanges]] =
+      Encoder.encodeVector(structures.NotebookDocumentCellContentChanges.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      a.structure.foreach: v =>
+        enc.field("structure", v, encode_structure)
+      a.data.foreach: v =>
+        enc.field("data", v, encode_data)
+      a.textContent.foreach: v =>
+        enc.field("textContent", v, encode_textContent)
+  end toJson
+end structures_NotebookDocumentCellChangesCodec
+
+private[lsp] trait structures_NotebookDocumentCellContentChangesCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentCellContentChanges] =
     // cache all decoders for this type when fromJson first initialised
     val decode_document: Decoder[structures.VersionedTextDocumentIdentifier] =
       structures.VersionedTextDocumentIdentifier.fromJson
@@ -8544,12 +9391,12 @@ private[lsp] trait structures_NotebookDocumentChangeEvent_Cells_S0Codec:
       for
         document <- dec.get("document", decode_document)
         changes  <- dec.get("changes", decode_changes)
-      yield S0(
+      yield NotebookDocumentCellContentChanges(
         document,
         changes
       )
   end fromJson
-  given toJson: Encoder[S0] =
+  given toJson: Encoder[NotebookDocumentCellContentChanges] =
     // cache all encoders for this type when toJson first initialised
     val encode_document: Encoder[structures.VersionedTextDocumentIdentifier] =
       structures.VersionedTextDocumentIdentifier.toJson
@@ -8560,7 +9407,36 @@ private[lsp] trait structures_NotebookDocumentChangeEvent_Cells_S0Codec:
       enc.field("document", a.document, encode_document)
       enc.field("changes", a.changes, encode_changes)
   end toJson
-end structures_NotebookDocumentChangeEvent_Cells_S0Codec
+end structures_NotebookDocumentCellContentChangesCodec
+
+private[lsp] trait structures_NotebookDocumentChangeEventCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentChangeEvent] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_metadata: Decoder[aliases.LSPObject] = aliases.LSPObject.fromJson
+    val decode_cells: Decoder[structures.NotebookDocumentCellChanges] =
+      structures.NotebookDocumentCellChanges.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        metadata <- dec.getOpt("metadata", decode_metadata)
+        cells    <- dec.getOpt("cells", decode_cells)
+      yield NotebookDocumentChangeEvent(
+        metadata,
+        cells
+      )
+  end fromJson
+  given toJson: Encoder[NotebookDocumentChangeEvent] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_metadata: Encoder[aliases.LSPObject] = aliases.LSPObject.toJson
+    val encode_cells: Encoder[structures.NotebookDocumentCellChanges] =
+      structures.NotebookDocumentCellChanges.toJson
+    Enc.toJsonObject: (enc, a) =>
+      a.metadata.foreach: v =>
+        enc.field("metadata", v, encode_metadata)
+      a.cells.foreach: v =>
+        enc.field("cells", v, encode_cells)
+  end toJson
+end structures_NotebookDocumentChangeEventCodec
 
 private[lsp] trait structures_NotebookDocumentClientCapabilitiesCodec:
   import structures.*
@@ -8583,6 +9459,180 @@ private[lsp] trait structures_NotebookDocumentClientCapabilitiesCodec:
     Enc.toJsonObject: (enc, a) =>
       enc.field("synchronization", a.synchronization, encode_synchronization)
 end structures_NotebookDocumentClientCapabilitiesCodec
+
+private[lsp] trait structures_NotebookDocumentFilterNotebookTypeCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentFilterNotebookType] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_notebookType: Decoder[String]         = Decoder.decodeString
+    val decode_scheme: Decoder[String]               = Decoder.decodeString
+    val decode_pattern: Decoder[aliases.GlobPattern] =
+      aliases.GlobPattern.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        notebookType <- dec.get("notebookType", decode_notebookType)
+        scheme       <- dec.getOpt("scheme", decode_scheme)
+        pattern      <- dec.getOpt("pattern", decode_pattern)
+      yield NotebookDocumentFilterNotebookType(
+        notebookType,
+        scheme,
+        pattern
+      )
+  end fromJson
+  given toJson: Encoder[NotebookDocumentFilterNotebookType] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_notebookType: Encoder[String]         = Encoder.encodeString
+    val encode_scheme: Encoder[String]               = Encoder.encodeString
+    val encode_pattern: Encoder[aliases.GlobPattern] =
+      aliases.GlobPattern.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("notebookType", a.notebookType, encode_notebookType)
+      a.scheme.foreach: v =>
+        enc.field("scheme", v, encode_scheme)
+      a.pattern.foreach: v =>
+        enc.field("pattern", v, encode_pattern)
+  end toJson
+end structures_NotebookDocumentFilterNotebookTypeCodec
+
+private[lsp] trait structures_NotebookDocumentFilterPatternCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentFilterPattern] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_notebookType: Decoder[String]         = Decoder.decodeString
+    val decode_scheme: Decoder[String]               = Decoder.decodeString
+    val decode_pattern: Decoder[aliases.GlobPattern] =
+      aliases.GlobPattern.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        notebookType <- dec.getOpt("notebookType", decode_notebookType)
+        scheme       <- dec.getOpt("scheme", decode_scheme)
+        pattern      <- dec.get("pattern", decode_pattern)
+      yield NotebookDocumentFilterPattern(
+        notebookType,
+        scheme,
+        pattern
+      )
+  end fromJson
+  given toJson: Encoder[NotebookDocumentFilterPattern] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_notebookType: Encoder[String]         = Encoder.encodeString
+    val encode_scheme: Encoder[String]               = Encoder.encodeString
+    val encode_pattern: Encoder[aliases.GlobPattern] =
+      aliases.GlobPattern.toJson
+    Enc.toJsonObject: (enc, a) =>
+      a.notebookType.foreach: v =>
+        enc.field("notebookType", v, encode_notebookType)
+      a.scheme.foreach: v =>
+        enc.field("scheme", v, encode_scheme)
+      enc.field("pattern", a.pattern, encode_pattern)
+  end toJson
+end structures_NotebookDocumentFilterPatternCodec
+
+private[lsp] trait structures_NotebookDocumentFilterSchemeCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentFilterScheme] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_notebookType: Decoder[String]         = Decoder.decodeString
+    val decode_scheme: Decoder[String]               = Decoder.decodeString
+    val decode_pattern: Decoder[aliases.GlobPattern] =
+      aliases.GlobPattern.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        notebookType <- dec.getOpt("notebookType", decode_notebookType)
+        scheme       <- dec.get("scheme", decode_scheme)
+        pattern      <- dec.getOpt("pattern", decode_pattern)
+      yield NotebookDocumentFilterScheme(
+        notebookType,
+        scheme,
+        pattern
+      )
+  end fromJson
+  given toJson: Encoder[NotebookDocumentFilterScheme] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_notebookType: Encoder[String]         = Encoder.encodeString
+    val encode_scheme: Encoder[String]               = Encoder.encodeString
+    val encode_pattern: Encoder[aliases.GlobPattern] =
+      aliases.GlobPattern.toJson
+    Enc.toJsonObject: (enc, a) =>
+      a.notebookType.foreach: v =>
+        enc.field("notebookType", v, encode_notebookType)
+      enc.field("scheme", a.scheme, encode_scheme)
+      a.pattern.foreach: v =>
+        enc.field("pattern", v, encode_pattern)
+  end toJson
+end structures_NotebookDocumentFilterSchemeCodec
+
+private[lsp] trait structures_NotebookDocumentFilterWithCellsCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentFilterWithCells] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_notebook: Decoder[(String | aliases.NotebookDocumentFilter)] =
+      Dec.union2[String, aliases.NotebookDocumentFilter](
+        Decoder.decodeString,
+        aliases.NotebookDocumentFilter.fromJson
+      )
+    val decode_cells: Decoder[Vector[structures.NotebookCellLanguage]] =
+      Decoder.decodeVector(structures.NotebookCellLanguage.fromJson)
+    Dec.fromJsonObject: dec =>
+      for
+        notebook <- dec.getOpt("notebook", decode_notebook)
+        cells    <- dec.get("cells", decode_cells)
+      yield NotebookDocumentFilterWithCells(
+        notebook,
+        cells
+      )
+  end fromJson
+  given toJson: Encoder[NotebookDocumentFilterWithCells] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_notebook: Encoder[(String | aliases.NotebookDocumentFilter)] =
+      Enc.union2[String, aliases.NotebookDocumentFilter](
+        Encoder.encodeString,
+        aliases.NotebookDocumentFilter.toJson
+      )
+    val encode_cells: Encoder[Vector[structures.NotebookCellLanguage]] =
+      Encoder.encodeVector(structures.NotebookCellLanguage.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      a.notebook.foreach: v =>
+        enc.field("notebook", v, encode_notebook)
+      enc.field("cells", a.cells, encode_cells)
+  end toJson
+end structures_NotebookDocumentFilterWithCellsCodec
+
+private[lsp] trait structures_NotebookDocumentFilterWithNotebookCodec:
+  import structures.*
+  given fromJson: Decoder[NotebookDocumentFilterWithNotebook] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_notebook: Decoder[(String | aliases.NotebookDocumentFilter)] =
+      Dec.union2[String, aliases.NotebookDocumentFilter](
+        Decoder.decodeString,
+        aliases.NotebookDocumentFilter.fromJson
+      )
+    val decode_cells: Decoder[Vector[structures.NotebookCellLanguage]] =
+      Decoder.decodeVector(structures.NotebookCellLanguage.fromJson)
+    Dec.fromJsonObject: dec =>
+      for
+        notebook <- dec.get("notebook", decode_notebook)
+        cells    <- dec.getOpt("cells", decode_cells)
+      yield NotebookDocumentFilterWithNotebook(
+        notebook,
+        cells
+      )
+  end fromJson
+  given toJson: Encoder[NotebookDocumentFilterWithNotebook] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_notebook: Encoder[(String | aliases.NotebookDocumentFilter)] =
+      Enc.union2[String, aliases.NotebookDocumentFilter](
+        Encoder.encodeString,
+        aliases.NotebookDocumentFilter.toJson
+      )
+    val encode_cells: Encoder[Vector[structures.NotebookCellLanguage]] =
+      Encoder.encodeVector(structures.NotebookCellLanguage.toJson)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("notebook", a.notebook, encode_notebook)
+      a.cells.foreach: v =>
+        enc.field("cells", v, encode_cells)
+  end toJson
+end structures_NotebookDocumentFilterWithNotebookCodec
 
 private[lsp] trait structures_NotebookDocumentIdentifierCodec:
   import structures.*
@@ -8637,14 +9687,17 @@ private[lsp] trait structures_NotebookDocumentSyncOptionsCodec:
   import structures.*
   given fromJson: Decoder[NotebookDocumentSyncOptions] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_notebookSelector: Decoder[
-      Vector[(NotebookDocumentSyncOptions.S0 | NotebookDocumentSyncOptions.S1)]
-    ] = Decoder.decodeVector(
-      Dec
-        .union2[NotebookDocumentSyncOptions.S0, NotebookDocumentSyncOptions.S1](
-          NotebookDocumentSyncOptions.S0.fromJson,
-          NotebookDocumentSyncOptions.S1.fromJson
-        )
+    val decode_notebookSelector: Decoder[Vector[
+      (structures.NotebookDocumentFilterWithNotebook |
+        structures.NotebookDocumentFilterWithCells)
+    ]] = Decoder.decodeVector(
+      Dec.union2[
+        structures.NotebookDocumentFilterWithNotebook,
+        structures.NotebookDocumentFilterWithCells
+      ](
+        structures.NotebookDocumentFilterWithNotebook.fromJson,
+        structures.NotebookDocumentFilterWithCells.fromJson
+      )
     )
     val decode_save: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
@@ -8658,14 +9711,17 @@ private[lsp] trait structures_NotebookDocumentSyncOptionsCodec:
   end fromJson
   given toJson: Encoder[NotebookDocumentSyncOptions] =
     // cache all encoders for this type when toJson first initialised
-    val encode_notebookSelector: Encoder[
-      Vector[(NotebookDocumentSyncOptions.S0 | NotebookDocumentSyncOptions.S1)]
-    ] = Encoder.encodeVector(
-      Enc
-        .union2[NotebookDocumentSyncOptions.S0, NotebookDocumentSyncOptions.S1](
-          NotebookDocumentSyncOptions.S0.toJson,
-          NotebookDocumentSyncOptions.S1.toJson
-        )
+    val encode_notebookSelector: Encoder[Vector[
+      (structures.NotebookDocumentFilterWithNotebook |
+        structures.NotebookDocumentFilterWithCells)
+    ]] = Encoder.encodeVector(
+      Enc.union2[
+        structures.NotebookDocumentFilterWithNotebook,
+        structures.NotebookDocumentFilterWithCells
+      ](
+        structures.NotebookDocumentFilterWithNotebook.toJson,
+        structures.NotebookDocumentFilterWithCells.toJson
+      )
     )
     val encode_save: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
@@ -8675,126 +9731,20 @@ private[lsp] trait structures_NotebookDocumentSyncOptionsCodec:
   end toJson
 end structures_NotebookDocumentSyncOptionsCodec
 
-private[lsp] trait structures_NotebookDocumentSyncOptions_S0Codec:
-  import structures.NotebookDocumentSyncOptions.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_notebook: Decoder[(String | aliases.NotebookDocumentFilter)] =
-      Dec.union2[String, aliases.NotebookDocumentFilter](
-        Decoder.decodeString,
-        aliases.NotebookDocumentFilter.fromJson
-      )
-    val decode_cells: Decoder[Vector[S0.S0]] =
-      Decoder.decodeVector(S0.S0.fromJson)
-    Dec.fromJsonObject: dec =>
-      for
-        notebook <- dec.get("notebook", decode_notebook)
-        cells    <- dec.getOpt("cells", decode_cells)
-      yield S0(
-        notebook,
-        cells
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_notebook: Encoder[(String | aliases.NotebookDocumentFilter)] =
-      Enc.union2[String, aliases.NotebookDocumentFilter](
-        Encoder.encodeString,
-        aliases.NotebookDocumentFilter.toJson
-      )
-    val encode_cells: Encoder[Vector[S0.S0]] =
-      Encoder.encodeVector(S0.S0.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("notebook", a.notebook, encode_notebook)
-      a.cells.foreach: v =>
-        enc.field("cells", v, encode_cells)
-  end toJson
-end structures_NotebookDocumentSyncOptions_S0Codec
-
-private[lsp] trait structures_NotebookDocumentSyncOptions_S0_S0Codec:
-  import structures.NotebookDocumentSyncOptions.S0.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for language <- dec.get("language", decode_language)
-      yield S0(
-        language
-      )
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("language", a.language, encode_language)
-end structures_NotebookDocumentSyncOptions_S0_S0Codec
-
-private[lsp] trait structures_NotebookDocumentSyncOptions_S1Codec:
-  import structures.NotebookDocumentSyncOptions.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_notebook: Decoder[(String | aliases.NotebookDocumentFilter)] =
-      Dec.union2[String, aliases.NotebookDocumentFilter](
-        Decoder.decodeString,
-        aliases.NotebookDocumentFilter.fromJson
-      )
-    val decode_cells: Decoder[Vector[S1.S0]] =
-      Decoder.decodeVector(S1.S0.fromJson)
-    Dec.fromJsonObject: dec =>
-      for
-        notebook <- dec.getOpt("notebook", decode_notebook)
-        cells    <- dec.get("cells", decode_cells)
-      yield S1(
-        notebook,
-        cells
-      )
-  end fromJson
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_notebook: Encoder[(String | aliases.NotebookDocumentFilter)] =
-      Enc.union2[String, aliases.NotebookDocumentFilter](
-        Encoder.encodeString,
-        aliases.NotebookDocumentFilter.toJson
-      )
-    val encode_cells: Encoder[Vector[S1.S0]] =
-      Encoder.encodeVector(S1.S0.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.notebook.foreach: v =>
-        enc.field("notebook", v, encode_notebook)
-      enc.field("cells", a.cells, encode_cells)
-  end toJson
-end structures_NotebookDocumentSyncOptions_S1Codec
-
-private[lsp] trait structures_NotebookDocumentSyncOptions_S1_S0Codec:
-  import structures.NotebookDocumentSyncOptions.S1.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for language <- dec.get("language", decode_language)
-      yield S0(
-        language
-      )
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("language", a.language, encode_language)
-end structures_NotebookDocumentSyncOptions_S1_S0Codec
-
 private[lsp] trait structures_NotebookDocumentSyncRegistrationOptionsCodec:
   import structures.*
   given fromJson: Decoder[NotebookDocumentSyncRegistrationOptions] =
     // cache all decoders for this type when fromJson first initialised
     val decode_notebookSelector: Decoder[Vector[
-      (NotebookDocumentSyncRegistrationOptions.S0 |
-        NotebookDocumentSyncRegistrationOptions.S1)
+      (structures.NotebookDocumentFilterWithNotebook |
+        structures.NotebookDocumentFilterWithCells)
     ]] = Decoder.decodeVector(
       Dec.union2[
-        NotebookDocumentSyncRegistrationOptions.S0,
-        NotebookDocumentSyncRegistrationOptions.S1
+        structures.NotebookDocumentFilterWithNotebook,
+        structures.NotebookDocumentFilterWithCells
       ](
-        NotebookDocumentSyncRegistrationOptions.S0.fromJson,
-        NotebookDocumentSyncRegistrationOptions.S1.fromJson
+        structures.NotebookDocumentFilterWithNotebook.fromJson,
+        structures.NotebookDocumentFilterWithCells.fromJson
       )
     )
     val decode_save: Decoder[Boolean] = Decoder.decodeBoolean
@@ -8813,15 +9763,15 @@ private[lsp] trait structures_NotebookDocumentSyncRegistrationOptionsCodec:
   given toJson: Encoder[NotebookDocumentSyncRegistrationOptions] =
     // cache all encoders for this type when toJson first initialised
     val encode_notebookSelector: Encoder[Vector[
-      (NotebookDocumentSyncRegistrationOptions.S0 |
-        NotebookDocumentSyncRegistrationOptions.S1)
+      (structures.NotebookDocumentFilterWithNotebook |
+        structures.NotebookDocumentFilterWithCells)
     ]] = Encoder.encodeVector(
       Enc.union2[
-        NotebookDocumentSyncRegistrationOptions.S0,
-        NotebookDocumentSyncRegistrationOptions.S1
+        structures.NotebookDocumentFilterWithNotebook,
+        structures.NotebookDocumentFilterWithCells
       ](
-        NotebookDocumentSyncRegistrationOptions.S0.toJson,
-        NotebookDocumentSyncRegistrationOptions.S1.toJson
+        structures.NotebookDocumentFilterWithNotebook.toJson,
+        structures.NotebookDocumentFilterWithCells.toJson
       )
     )
     val encode_save: Encoder[Boolean] = Encoder.encodeBoolean
@@ -8834,112 +9784,6 @@ private[lsp] trait structures_NotebookDocumentSyncRegistrationOptionsCodec:
         enc.field("id", v, encode_id)
   end toJson
 end structures_NotebookDocumentSyncRegistrationOptionsCodec
-
-private[lsp] trait structures_NotebookDocumentSyncRegistrationOptions_S0Codec:
-  import structures.NotebookDocumentSyncRegistrationOptions.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_notebook: Decoder[(String | aliases.NotebookDocumentFilter)] =
-      Dec.union2[String, aliases.NotebookDocumentFilter](
-        Decoder.decodeString,
-        aliases.NotebookDocumentFilter.fromJson
-      )
-    val decode_cells: Decoder[Vector[S0.S0]] =
-      Decoder.decodeVector(S0.S0.fromJson)
-    Dec.fromJsonObject: dec =>
-      for
-        notebook <- dec.get("notebook", decode_notebook)
-        cells    <- dec.getOpt("cells", decode_cells)
-      yield S0(
-        notebook,
-        cells
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_notebook: Encoder[(String | aliases.NotebookDocumentFilter)] =
-      Enc.union2[String, aliases.NotebookDocumentFilter](
-        Encoder.encodeString,
-        aliases.NotebookDocumentFilter.toJson
-      )
-    val encode_cells: Encoder[Vector[S0.S0]] =
-      Encoder.encodeVector(S0.S0.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("notebook", a.notebook, encode_notebook)
-      a.cells.foreach: v =>
-        enc.field("cells", v, encode_cells)
-  end toJson
-end structures_NotebookDocumentSyncRegistrationOptions_S0Codec
-
-private[lsp] trait structures_NotebookDocumentSyncRegistrationOptions_S0_S0Codec:
-  import structures.NotebookDocumentSyncRegistrationOptions.S0.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for language <- dec.get("language", decode_language)
-      yield S0(
-        language
-      )
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("language", a.language, encode_language)
-end structures_NotebookDocumentSyncRegistrationOptions_S0_S0Codec
-
-private[lsp] trait structures_NotebookDocumentSyncRegistrationOptions_S1Codec:
-  import structures.NotebookDocumentSyncRegistrationOptions.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_notebook: Decoder[(String | aliases.NotebookDocumentFilter)] =
-      Dec.union2[String, aliases.NotebookDocumentFilter](
-        Decoder.decodeString,
-        aliases.NotebookDocumentFilter.fromJson
-      )
-    val decode_cells: Decoder[Vector[S1.S0]] =
-      Decoder.decodeVector(S1.S0.fromJson)
-    Dec.fromJsonObject: dec =>
-      for
-        notebook <- dec.getOpt("notebook", decode_notebook)
-        cells    <- dec.get("cells", decode_cells)
-      yield S1(
-        notebook,
-        cells
-      )
-  end fromJson
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_notebook: Encoder[(String | aliases.NotebookDocumentFilter)] =
-      Enc.union2[String, aliases.NotebookDocumentFilter](
-        Encoder.encodeString,
-        aliases.NotebookDocumentFilter.toJson
-      )
-    val encode_cells: Encoder[Vector[S1.S0]] =
-      Encoder.encodeVector(S1.S0.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.notebook.foreach: v =>
-        enc.field("notebook", v, encode_notebook)
-      enc.field("cells", a.cells, encode_cells)
-  end toJson
-end structures_NotebookDocumentSyncRegistrationOptions_S1Codec
-
-private[lsp] trait structures_NotebookDocumentSyncRegistrationOptions_S1_S0Codec:
-  import structures.NotebookDocumentSyncRegistrationOptions.S1.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for language <- dec.get("language", decode_language)
-      yield S0(
-        language
-      )
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("language", a.language, encode_language)
-end structures_NotebookDocumentSyncRegistrationOptions_S1_S0Codec
 
 private[lsp] trait structures_OptionalVersionedTextDocumentIdentifierCodec:
   import structures.*
@@ -9056,6 +9900,23 @@ private[lsp] trait structures_PositionCodec:
       enc.field("character", a.character, encode_character)
 end structures_PositionCodec
 
+private[lsp] trait structures_PrepareRenameDefaultBehaviorCodec:
+  import structures.*
+  given fromJson: Decoder[PrepareRenameDefaultBehavior] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_defaultBehavior: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for defaultBehavior <- dec.get("defaultBehavior", decode_defaultBehavior)
+      yield PrepareRenameDefaultBehavior(
+        defaultBehavior
+      )
+  given toJson: Encoder[PrepareRenameDefaultBehavior] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_defaultBehavior: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("defaultBehavior", a.defaultBehavior, encode_defaultBehavior)
+end structures_PrepareRenameDefaultBehaviorCodec
+
 private[lsp] trait structures_PrepareRenameParamsCodec:
   import structures.*
   given fromJson: Decoder[PrepareRenameParams] =
@@ -9092,6 +9953,30 @@ private[lsp] trait structures_PrepareRenameParamsCodec:
         enc.field("workDoneToken", v, encode_workDoneToken)
   end toJson
 end structures_PrepareRenameParamsCodec
+
+private[lsp] trait structures_PrepareRenamePlaceholderCodec:
+  import structures.*
+  given fromJson: Decoder[PrepareRenamePlaceholder] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_range: Decoder[structures.Range] = structures.Range.fromJson
+    val decode_placeholder: Decoder[String]     = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        range       <- dec.get("range", decode_range)
+        placeholder <- dec.get("placeholder", decode_placeholder)
+      yield PrepareRenamePlaceholder(
+        range,
+        placeholder
+      )
+  end fromJson
+  given toJson: Encoder[PrepareRenamePlaceholder] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_range: Encoder[structures.Range] = structures.Range.toJson
+    val encode_placeholder: Encoder[String]     = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("range", a.range, encode_range)
+      enc.field("placeholder", a.placeholder, encode_placeholder)
+end structures_PrepareRenamePlaceholderCodec
 
 private[lsp] trait structures_PreviousResultIdCodec:
   import structures.*
@@ -9147,75 +10032,54 @@ private[lsp] trait structures_PublishDiagnosticsClientCapabilitiesCodec:
   import structures.*
   given fromJson: Decoder[PublishDiagnosticsClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
+    val decode_versionSupport: Decoder[Boolean]     = Decoder.decodeBoolean
     val decode_relatedInformation: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_tagSupport
-        : Decoder[PublishDiagnosticsClientCapabilities.TagSupport] =
-      PublishDiagnosticsClientCapabilities.TagSupport.fromJson
-    val decode_versionSupport: Decoder[Boolean]         = Decoder.decodeBoolean
+    val decode_tagSupport: Decoder[structures.ClientDiagnosticsTagOptions] =
+      structures.ClientDiagnosticsTagOptions.fromJson
     val decode_codeDescriptionSupport: Decoder[Boolean] = Decoder.decodeBoolean
     val decode_dataSupport: Decoder[Boolean]            = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
+        versionSupport <- dec.getOpt("versionSupport", decode_versionSupport)
         relatedInformation <- dec.getOpt(
           "relatedInformation",
           decode_relatedInformation
         )
-        tagSupport     <- dec.getOpt("tagSupport", decode_tagSupport)
-        versionSupport <- dec.getOpt("versionSupport", decode_versionSupport)
+        tagSupport             <- dec.getOpt("tagSupport", decode_tagSupport)
         codeDescriptionSupport <- dec.getOpt(
           "codeDescriptionSupport",
           decode_codeDescriptionSupport
         )
         dataSupport <- dec.getOpt("dataSupport", decode_dataSupport)
       yield PublishDiagnosticsClientCapabilities(
+        versionSupport,
         relatedInformation,
         tagSupport,
-        versionSupport,
         codeDescriptionSupport,
         dataSupport
       )
   end fromJson
   given toJson: Encoder[PublishDiagnosticsClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
+    val encode_versionSupport: Encoder[Boolean]     = Encoder.encodeBoolean
     val encode_relatedInformation: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_tagSupport
-        : Encoder[PublishDiagnosticsClientCapabilities.TagSupport] =
-      PublishDiagnosticsClientCapabilities.TagSupport.toJson
-    val encode_versionSupport: Encoder[Boolean]         = Encoder.encodeBoolean
+    val encode_tagSupport: Encoder[structures.ClientDiagnosticsTagOptions] =
+      structures.ClientDiagnosticsTagOptions.toJson
     val encode_codeDescriptionSupport: Encoder[Boolean] = Encoder.encodeBoolean
     val encode_dataSupport: Encoder[Boolean]            = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
+      a.versionSupport.foreach: v =>
+        enc.field("versionSupport", v, encode_versionSupport)
       a.relatedInformation.foreach: v =>
         enc.field("relatedInformation", v, encode_relatedInformation)
       a.tagSupport.foreach: v =>
         enc.field("tagSupport", v, encode_tagSupport)
-      a.versionSupport.foreach: v =>
-        enc.field("versionSupport", v, encode_versionSupport)
       a.codeDescriptionSupport.foreach: v =>
         enc.field("codeDescriptionSupport", v, encode_codeDescriptionSupport)
       a.dataSupport.foreach: v =>
         enc.field("dataSupport", v, encode_dataSupport)
   end toJson
 end structures_PublishDiagnosticsClientCapabilitiesCodec
-
-private[lsp] trait structures_PublishDiagnosticsClientCapabilities_TagSupportCodec:
-  import structures.PublishDiagnosticsClientCapabilities.*
-  given fromJson: Decoder[TagSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.DiagnosticTag]] =
-      Decoder.decodeVector(enumerations.DiagnosticTag.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.get("valueSet", decode_valueSet)
-      yield TagSupport(
-        valueSet
-      )
-  given toJson: Encoder[TagSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.DiagnosticTag]] =
-      Encoder.encodeVector(enumerations.DiagnosticTag.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("valueSet", a.valueSet, encode_valueSet)
-end structures_PublishDiagnosticsClientCapabilities_TagSupportCodec
 
 private[lsp] trait structures_PublishDiagnosticsParamsCodec:
   import structures.*
@@ -9477,7 +10341,8 @@ private[lsp] trait structures_RegularExpressionsClientCapabilitiesCodec:
   import structures.*
   given fromJson: Decoder[RegularExpressionsClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_engine: Decoder[String]  = Decoder.decodeString
+    val decode_engine: Decoder[aliases.RegularExpressionEngineKind] =
+      aliases.RegularExpressionEngineKind.fromJson
     val decode_version: Decoder[String] = Decoder.decodeString
     Dec.fromJsonObject: dec =>
       for
@@ -9490,7 +10355,8 @@ private[lsp] trait structures_RegularExpressionsClientCapabilitiesCodec:
   end fromJson
   given toJson: Encoder[RegularExpressionsClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
-    val encode_engine: Encoder[String]  = Encoder.encodeString
+    val encode_engine: Encoder[aliases.RegularExpressionEngineKind] =
+      aliases.RegularExpressionEngineKind.toJson
     val encode_version: Encoder[String] = Encoder.encodeString
     Enc.toJsonObject: (enc, a) =>
       enc.field("engine", a.engine, encode_engine)
@@ -9841,39 +10707,39 @@ private[lsp] trait structures_RenameParamsCodec:
   import structures.*
   given fromJson: Decoder[RenameParams] =
     // cache all decoders for this type when fromJson first initialised
+    val decode_newName: Decoder[String] = Decoder.decodeString
     val decode_textDocument: Decoder[structures.TextDocumentIdentifier] =
       structures.TextDocumentIdentifier.fromJson
     val decode_position: Decoder[structures.Position] =
       structures.Position.fromJson
-    val decode_newName: Decoder[String] = Decoder.decodeString
     val decode_workDoneToken: Decoder[aliases.ProgressToken] =
       aliases.ProgressToken.fromJson
     Dec.fromJsonObject: dec =>
       for
+        newName       <- dec.get("newName", decode_newName)
         textDocument  <- dec.get("textDocument", decode_textDocument)
         position      <- dec.get("position", decode_position)
-        newName       <- dec.get("newName", decode_newName)
         workDoneToken <- dec.getOpt("workDoneToken", decode_workDoneToken)
       yield RenameParams(
+        newName,
         textDocument,
         position,
-        newName,
         workDoneToken
       )
   end fromJson
   given toJson: Encoder[RenameParams] =
     // cache all encoders for this type when toJson first initialised
+    val encode_newName: Encoder[String] = Encoder.encodeString
     val encode_textDocument: Encoder[structures.TextDocumentIdentifier] =
       structures.TextDocumentIdentifier.toJson
     val encode_position: Encoder[structures.Position] =
       structures.Position.toJson
-    val encode_newName: Encoder[String] = Encoder.encodeString
     val encode_workDoneToken: Encoder[aliases.ProgressToken] =
       aliases.ProgressToken.toJson
     Enc.toJsonObject: (enc, a) =>
+      enc.field("newName", a.newName, encode_newName)
       enc.field("textDocument", a.textDocument, encode_textDocument)
       enc.field("position", a.position, encode_position)
-      enc.field("newName", a.newName, encode_newName)
       a.workDoneToken.foreach: v =>
         enc.field("workDoneToken", v, encode_workDoneToken)
   end toJson
@@ -9955,6 +10821,30 @@ private[lsp] trait structures_SaveOptionsCodec:
       a.includeText.foreach: v =>
         enc.field("includeText", v, encode_includeText)
 end structures_SaveOptionsCodec
+
+private[lsp] trait structures_SelectedCompletionInfoCodec:
+  import structures.*
+  given fromJson: Decoder[SelectedCompletionInfo] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_range: Decoder[structures.Range] = structures.Range.fromJson
+    val decode_text: Decoder[String]            = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        range <- dec.get("range", decode_range)
+        text  <- dec.get("text", decode_text)
+      yield SelectedCompletionInfo(
+        range,
+        text
+      )
+  end fromJson
+  given toJson: Encoder[SelectedCompletionInfo] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_range: Encoder[structures.Range] = structures.Range.toJson
+    val encode_text: Encoder[String]            = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("range", a.range, encode_range)
+      enc.field("text", a.text, encode_text)
+end structures_SelectedCompletionInfoCodec
 
 private[lsp] trait structures_SelectionRangeCodec:
   import structures.*
@@ -10140,8 +11030,9 @@ private[lsp] trait structures_SemanticTokensClientCapabilitiesCodec:
   given fromJson: Decoder[SemanticTokensClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_requests: Decoder[SemanticTokensClientCapabilities.Requests] =
-      SemanticTokensClientCapabilities.Requests.fromJson
+    val decode_requests
+        : Decoder[structures.ClientSemanticTokensRequestOptions] =
+      structures.ClientSemanticTokensRequestOptions.fromJson
     val decode_tokenTypes: Decoder[Vector[String]] =
       Decoder.decodeVector(Decoder.decodeString)
     val decode_tokenModifiers: Decoder[Vector[String]] =
@@ -10193,8 +11084,9 @@ private[lsp] trait structures_SemanticTokensClientCapabilitiesCodec:
   given toJson: Encoder[SemanticTokensClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_requests: Encoder[SemanticTokensClientCapabilities.Requests] =
-      SemanticTokensClientCapabilities.Requests.toJson
+    val encode_requests
+        : Encoder[structures.ClientSemanticTokensRequestOptions] =
+      structures.ClientSemanticTokensRequestOptions.toJson
     val encode_tokenTypes: Encoder[Vector[String]] =
       Encoder.encodeVector(Encoder.encodeString)
     val encode_tokenModifiers: Encoder[Vector[String]] =
@@ -10222,62 +11114,6 @@ private[lsp] trait structures_SemanticTokensClientCapabilitiesCodec:
         enc.field("augmentsSyntaxTokens", v, encode_augmentsSyntaxTokens)
   end toJson
 end structures_SemanticTokensClientCapabilitiesCodec
-
-private[lsp] trait structures_SemanticTokensClientCapabilities_RequestsCodec:
-  import structures.SemanticTokensClientCapabilities.*
-  given fromJson: Decoder[Requests] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_range: Decoder[(Boolean | Requests.S0)] = Dec
-      .union2[Boolean, Requests.S0](Decoder.decodeBoolean, Requests.S0.fromJson)
-    val decode_full: Decoder[(Boolean | Requests.S1)] = Dec
-      .union2[Boolean, Requests.S1](Decoder.decodeBoolean, Requests.S1.fromJson)
-    Dec.fromJsonObject: dec =>
-      for
-        range <- dec.getOpt("range", decode_range)
-        full  <- dec.getOpt("full", decode_full)
-      yield Requests(
-        range,
-        full
-      )
-  end fromJson
-  given toJson: Encoder[Requests] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_range: Encoder[(Boolean | Requests.S0)] = Enc
-      .union2[Boolean, Requests.S0](Encoder.encodeBoolean, Requests.S0.toJson)
-    val encode_full: Encoder[(Boolean | Requests.S1)] = Enc
-      .union2[Boolean, Requests.S1](Encoder.encodeBoolean, Requests.S1.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.range.foreach: v =>
-        enc.field("range", v, encode_range)
-      a.full.foreach: v =>
-        enc.field("full", v, encode_full)
-  end toJson
-end structures_SemanticTokensClientCapabilities_RequestsCodec
-
-private[lsp] trait structures_SemanticTokensClientCapabilities_Requests_S0Codec:
-  import structures.SemanticTokensClientCapabilities.Requests.*
-  given fromJson: Decoder[S0] =
-    Decoder.const(S0())
-  given toJson: Encoder[S0] =
-    Encoder.instance(_ => Json.obj())
-
-private[lsp] trait structures_SemanticTokensClientCapabilities_Requests_S1Codec:
-  import structures.SemanticTokensClientCapabilities.Requests.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_delta: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for delta <- dec.getOpt("delta", decode_delta)
-      yield S1(
-        delta
-      )
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_delta: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.delta.foreach: v =>
-        enc.field("delta", v, encode_delta)
-end structures_SemanticTokensClientCapabilities_Requests_S1Codec
 
 private[lsp] trait structures_SemanticTokensDeltaCodec:
   import structures.*
@@ -10404,6 +11240,24 @@ private[lsp] trait structures_SemanticTokensEditCodec:
   end toJson
 end structures_SemanticTokensEditCodec
 
+private[lsp] trait structures_SemanticTokensFullDeltaCodec:
+  import structures.*
+  given fromJson: Decoder[SemanticTokensFullDelta] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_delta: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for delta <- dec.getOpt("delta", decode_delta)
+      yield SemanticTokensFullDelta(
+        delta
+      )
+  given toJson: Encoder[SemanticTokensFullDelta] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_delta: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.delta.foreach: v =>
+        enc.field("delta", v, encode_delta)
+end structures_SemanticTokensFullDeltaCodec
+
 private[lsp] trait structures_SemanticTokensLegendCodec:
   import structures.*
   given fromJson: Decoder[SemanticTokensLegend] =
@@ -10443,10 +11297,10 @@ private[lsp] trait structures_SemanticTokensOptionsCodec:
         Decoder.decodeBoolean,
         SemanticTokensOptions.S0.fromJson
       )
-    val decode_full: Decoder[(Boolean | SemanticTokensOptions.S1)] =
-      Dec.union2[Boolean, SemanticTokensOptions.S1](
+    val decode_full: Decoder[(Boolean | structures.SemanticTokensFullDelta)] =
+      Dec.union2[Boolean, structures.SemanticTokensFullDelta](
         Decoder.decodeBoolean,
-        SemanticTokensOptions.S1.fromJson
+        structures.SemanticTokensFullDelta.fromJson
       )
     val decode_workDoneProgress: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
@@ -10474,10 +11328,10 @@ private[lsp] trait structures_SemanticTokensOptionsCodec:
         Encoder.encodeBoolean,
         SemanticTokensOptions.S0.toJson
       )
-    val encode_full: Encoder[(Boolean | SemanticTokensOptions.S1)] =
-      Enc.union2[Boolean, SemanticTokensOptions.S1](
+    val encode_full: Encoder[(Boolean | structures.SemanticTokensFullDelta)] =
+      Enc.union2[Boolean, structures.SemanticTokensFullDelta](
         Encoder.encodeBoolean,
-        SemanticTokensOptions.S1.toJson
+        structures.SemanticTokensFullDelta.toJson
       )
     val encode_workDoneProgress: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
@@ -10497,24 +11351,6 @@ private[lsp] trait structures_SemanticTokensOptions_S0Codec:
     Decoder.const(S0())
   given toJson: Encoder[S0] =
     Encoder.instance(_ => Json.obj())
-
-private[lsp] trait structures_SemanticTokensOptions_S1Codec:
-  import structures.SemanticTokensOptions.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_delta: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for delta <- dec.getOpt("delta", decode_delta)
-      yield S1(
-        delta
-      )
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_delta: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.delta.foreach: v =>
-        enc.field("delta", v, encode_delta)
-end structures_SemanticTokensOptions_S1Codec
 
 private[lsp] trait structures_SemanticTokensParamsCodec:
   import structures.*
@@ -10636,10 +11472,10 @@ private[lsp] trait structures_SemanticTokensRegistrationOptionsCodec:
         Decoder.decodeBoolean,
         SemanticTokensRegistrationOptions.S0.fromJson
       )
-    val decode_full: Decoder[(Boolean | SemanticTokensRegistrationOptions.S1)] =
-      Dec.union2[Boolean, SemanticTokensRegistrationOptions.S1](
+    val decode_full: Decoder[(Boolean | structures.SemanticTokensFullDelta)] =
+      Dec.union2[Boolean, structures.SemanticTokensFullDelta](
         Decoder.decodeBoolean,
-        SemanticTokensRegistrationOptions.S1.fromJson
+        structures.SemanticTokensFullDelta.fromJson
       )
     val decode_id: Decoder[String] = Decoder.decodeString
     Dec.fromJsonObject: dec =>
@@ -10672,10 +11508,10 @@ private[lsp] trait structures_SemanticTokensRegistrationOptionsCodec:
         Encoder.encodeBoolean,
         SemanticTokensRegistrationOptions.S0.toJson
       )
-    val encode_full: Encoder[(Boolean | SemanticTokensRegistrationOptions.S1)] =
-      Enc.union2[Boolean, SemanticTokensRegistrationOptions.S1](
+    val encode_full: Encoder[(Boolean | structures.SemanticTokensFullDelta)] =
+      Enc.union2[Boolean, structures.SemanticTokensFullDelta](
         Encoder.encodeBoolean,
-        SemanticTokensRegistrationOptions.S1.toJson
+        structures.SemanticTokensFullDelta.toJson
       )
     val encode_id: Encoder[String] = Encoder.encodeString
     Enc.toJsonObject: (enc, a) =>
@@ -10697,24 +11533,6 @@ private[lsp] trait structures_SemanticTokensRegistrationOptions_S0Codec:
     Decoder.const(S0())
   given toJson: Encoder[S0] =
     Encoder.instance(_ => Json.obj())
-
-private[lsp] trait structures_SemanticTokensRegistrationOptions_S1Codec:
-  import structures.SemanticTokensRegistrationOptions.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_delta: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for delta <- dec.getOpt("delta", decode_delta)
-      yield S1(
-        delta
-      )
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_delta: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.delta.foreach: v =>
-        enc.field("delta", v, encode_delta)
-end structures_SemanticTokensRegistrationOptions_S1Codec
 
 private[lsp] trait structures_SemanticTokensWorkspaceClientCapabilitiesCodec:
   import structures.*
@@ -10994,8 +11812,14 @@ private[lsp] trait structures_ServerCapabilitiesCodec:
       structures.DiagnosticOptions.fromJson,
       structures.DiagnosticRegistrationOptions.fromJson
     )
-    val decode_workspace: Decoder[ServerCapabilities.Workspace] =
-      ServerCapabilities.Workspace.fromJson
+    val decode_inlineCompletionProvider
+        : Decoder[(Boolean | structures.InlineCompletionOptions)] =
+      Dec.union2[Boolean, structures.InlineCompletionOptions](
+        Decoder.decodeBoolean,
+        structures.InlineCompletionOptions.fromJson
+      )
+    val decode_workspace: Decoder[structures.WorkspaceOptions] =
+      structures.WorkspaceOptions.fromJson
     val decode_experimental: Decoder[io.circe.Json] = Decoder.decodeJson
     Dec.fromJsonObject: dec =>
       for
@@ -11119,6 +11943,10 @@ private[lsp] trait structures_ServerCapabilitiesCodec:
           "diagnosticProvider",
           decode_diagnosticProvider
         )
+        inlineCompletionProvider <- dec.getOpt(
+          "inlineCompletionProvider",
+          decode_inlineCompletionProvider
+        )
         workspace    <- dec.getOpt("workspace", decode_workspace)
         experimental <- dec.getOpt("experimental", decode_experimental)
       yield ServerCapabilities(
@@ -11155,6 +11983,7 @@ private[lsp] trait structures_ServerCapabilitiesCodec:
         inlineValueProvider,
         inlayHintProvider,
         diagnosticProvider,
+        inlineCompletionProvider,
         workspace,
         experimental
       )
@@ -11417,8 +12246,14 @@ private[lsp] trait structures_ServerCapabilitiesCodec:
       structures.DiagnosticOptions.toJson,
       structures.DiagnosticRegistrationOptions.toJson
     )
-    val encode_workspace: Encoder[ServerCapabilities.Workspace] =
-      ServerCapabilities.Workspace.toJson
+    val encode_inlineCompletionProvider
+        : Encoder[(Boolean | structures.InlineCompletionOptions)] =
+      Enc.union2[Boolean, structures.InlineCompletionOptions](
+        Encoder.encodeBoolean,
+        structures.InlineCompletionOptions.toJson
+      )
+    val encode_workspace: Encoder[structures.WorkspaceOptions] =
+      structures.WorkspaceOptions.toJson
     val encode_experimental: Encoder[io.circe.Json] = Encoder.encodeJson
     Enc.toJsonObject: (enc, a) =>
       a.positionEncoding.foreach: v =>
@@ -11507,6 +12342,12 @@ private[lsp] trait structures_ServerCapabilitiesCodec:
         enc.field("inlayHintProvider", v, encode_inlayHintProvider)
       a.diagnosticProvider.foreach: v =>
         enc.field("diagnosticProvider", v, encode_diagnosticProvider)
+      a.inlineCompletionProvider.foreach: v =>
+        enc.field(
+          "inlineCompletionProvider",
+          v,
+          encode_inlineCompletionProvider
+        )
       a.workspace.foreach: v =>
         enc.field("workspace", v, encode_workspace)
       a.experimental.foreach: v =>
@@ -11514,48 +12355,59 @@ private[lsp] trait structures_ServerCapabilitiesCodec:
   end toJson
 end structures_ServerCapabilitiesCodec
 
-private[lsp] trait structures_ServerCapabilities_WorkspaceCodec:
-  import structures.ServerCapabilities.*
-  given fromJson: Decoder[Workspace] =
+private[lsp] trait structures_ServerCompletionItemOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[ServerCompletionItemOptions] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_workspaceFolders
-        : Decoder[structures.WorkspaceFoldersServerCapabilities] =
-      structures.WorkspaceFoldersServerCapabilities.fromJson
-    val decode_fileOperations: Decoder[structures.FileOperationOptions] =
-      structures.FileOperationOptions.fromJson
+    val decode_labelDetailsSupport: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
-      for
-        workspaceFolders <- dec.getOpt(
-          "workspaceFolders",
-          decode_workspaceFolders
+      for labelDetailsSupport <- dec.getOpt(
+          "labelDetailsSupport",
+          decode_labelDetailsSupport
         )
-        fileOperations <- dec.getOpt("fileOperations", decode_fileOperations)
-      yield Workspace(
-        workspaceFolders,
-        fileOperations
+      yield ServerCompletionItemOptions(
+        labelDetailsSupport
       )
   end fromJson
-  given toJson: Encoder[Workspace] =
+  given toJson: Encoder[ServerCompletionItemOptions] =
     // cache all encoders for this type when toJson first initialised
-    val encode_workspaceFolders
-        : Encoder[structures.WorkspaceFoldersServerCapabilities] =
-      structures.WorkspaceFoldersServerCapabilities.toJson
-    val encode_fileOperations: Encoder[structures.FileOperationOptions] =
-      structures.FileOperationOptions.toJson
+    val encode_labelDetailsSupport: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
-      a.workspaceFolders.foreach: v =>
-        enc.field("workspaceFolders", v, encode_workspaceFolders)
-      a.fileOperations.foreach: v =>
-        enc.field("fileOperations", v, encode_fileOperations)
-  end toJson
-end structures_ServerCapabilities_WorkspaceCodec
+      a.labelDetailsSupport.foreach: v =>
+        enc.field("labelDetailsSupport", v, encode_labelDetailsSupport)
+end structures_ServerCompletionItemOptionsCodec
+
+private[lsp] trait structures_ServerInfoCodec:
+  import structures.*
+  given fromJson: Decoder[ServerInfo] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_name: Decoder[String]    = Decoder.decodeString
+    val decode_version: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        name    <- dec.get("name", decode_name)
+        version <- dec.getOpt("version", decode_version)
+      yield ServerInfo(
+        name,
+        version
+      )
+  end fromJson
+  given toJson: Encoder[ServerInfo] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_name: Encoder[String]    = Encoder.encodeString
+    val encode_version: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("name", a.name, encode_name)
+      a.version.foreach: v =>
+        enc.field("version", v, encode_version)
+end structures_ServerInfoCodec
 
 private[lsp] trait structures_SetTraceParamsCodec:
   import structures.*
   given fromJson: Decoder[SetTraceParams] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_value: Decoder[enumerations.TraceValues] =
-      enumerations.TraceValues.fromJson
+    val decode_value: Decoder[enumerations.TraceValue] =
+      enumerations.TraceValue.fromJson
     Dec.fromJsonObject: dec =>
       for value <- dec.get("value", decode_value)
       yield SetTraceParams(
@@ -11563,8 +12415,8 @@ private[lsp] trait structures_SetTraceParamsCodec:
       )
   given toJson: Encoder[SetTraceParams] =
     // cache all encoders for this type when toJson first initialised
-    val encode_value: Encoder[enumerations.TraceValues] =
-      enumerations.TraceValues.toJson
+    val encode_value: Encoder[enumerations.TraceValue] =
+      enumerations.TraceValue.toJson
     Enc.toJsonObject: (enc, a) =>
       enc.field("value", a.value, encode_value)
 end structures_SetTraceParamsCodec
@@ -11672,8 +12524,8 @@ private[lsp] trait structures_ShowMessageRequestClientCapabilitiesCodec:
   given fromJson: Decoder[ShowMessageRequestClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_messageActionItem
-        : Decoder[ShowMessageRequestClientCapabilities.MessageActionItem] =
-      ShowMessageRequestClientCapabilities.MessageActionItem.fromJson
+        : Decoder[structures.ClientShowMessageActionItemOptions] =
+      structures.ClientShowMessageActionItemOptions.fromJson
     Dec.fromJsonObject: dec =>
       for messageActionItem <- dec.getOpt(
           "messageActionItem",
@@ -11686,41 +12538,12 @@ private[lsp] trait structures_ShowMessageRequestClientCapabilitiesCodec:
   given toJson: Encoder[ShowMessageRequestClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_messageActionItem
-        : Encoder[ShowMessageRequestClientCapabilities.MessageActionItem] =
-      ShowMessageRequestClientCapabilities.MessageActionItem.toJson
+        : Encoder[structures.ClientShowMessageActionItemOptions] =
+      structures.ClientShowMessageActionItemOptions.toJson
     Enc.toJsonObject: (enc, a) =>
       a.messageActionItem.foreach: v =>
         enc.field("messageActionItem", v, encode_messageActionItem)
 end structures_ShowMessageRequestClientCapabilitiesCodec
-
-private[lsp] trait structures_ShowMessageRequestClientCapabilities_MessageActionItemCodec:
-  import structures.ShowMessageRequestClientCapabilities.*
-  given fromJson: Decoder[MessageActionItem] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_additionalPropertiesSupport: Decoder[Boolean] =
-      Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for additionalPropertiesSupport <- dec.getOpt(
-          "additionalPropertiesSupport",
-          decode_additionalPropertiesSupport
-        )
-      yield MessageActionItem(
-        additionalPropertiesSupport
-      )
-  end fromJson
-  given toJson: Encoder[MessageActionItem] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_additionalPropertiesSupport: Encoder[Boolean] =
-      Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.additionalPropertiesSupport.foreach: v =>
-        enc.field(
-          "additionalPropertiesSupport",
-          v,
-          encode_additionalPropertiesSupport
-        )
-  end toJson
-end structures_ShowMessageRequestClientCapabilities_MessageActionItemCodec
 
 private[lsp] trait structures_ShowMessageRequestParamsCodec:
   import structures.*
@@ -11797,8 +12620,8 @@ private[lsp] trait structures_SignatureHelpClientCapabilitiesCodec:
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
     val decode_signatureInformation
-        : Decoder[SignatureHelpClientCapabilities.SignatureInformation] =
-      SignatureHelpClientCapabilities.SignatureInformation.fromJson
+        : Decoder[structures.ClientSignatureInformationOptions] =
+      structures.ClientSignatureInformationOptions.fromJson
     val decode_contextSupport: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
@@ -11821,8 +12644,8 @@ private[lsp] trait structures_SignatureHelpClientCapabilitiesCodec:
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
     val encode_signatureInformation
-        : Encoder[SignatureHelpClientCapabilities.SignatureInformation] =
-      SignatureHelpClientCapabilities.SignatureInformation.toJson
+        : Encoder[structures.ClientSignatureInformationOptions] =
+      structures.ClientSignatureInformationOptions.toJson
     val encode_contextSupport: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
@@ -11833,76 +12656,6 @@ private[lsp] trait structures_SignatureHelpClientCapabilitiesCodec:
         enc.field("contextSupport", v, encode_contextSupport)
   end toJson
 end structures_SignatureHelpClientCapabilitiesCodec
-
-private[lsp] trait structures_SignatureHelpClientCapabilities_SignatureInformationCodec:
-  import structures.SignatureHelpClientCapabilities.*
-  given fromJson: Decoder[SignatureInformation] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_documentationFormat: Decoder[Vector[enumerations.MarkupKind]] =
-      Decoder.decodeVector(enumerations.MarkupKind.fromJson)
-    val decode_parameterInformation
-        : Decoder[SignatureInformation.ParameterInformation] =
-      SignatureInformation.ParameterInformation.fromJson
-    val decode_activeParameterSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for
-        documentationFormat <- dec.getOpt(
-          "documentationFormat",
-          decode_documentationFormat
-        )
-        parameterInformation <- dec.getOpt(
-          "parameterInformation",
-          decode_parameterInformation
-        )
-        activeParameterSupport <- dec.getOpt(
-          "activeParameterSupport",
-          decode_activeParameterSupport
-        )
-      yield SignatureInformation(
-        documentationFormat,
-        parameterInformation,
-        activeParameterSupport
-      )
-  end fromJson
-  given toJson: Encoder[SignatureInformation] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_documentationFormat: Encoder[Vector[enumerations.MarkupKind]] =
-      Encoder.encodeVector(enumerations.MarkupKind.toJson)
-    val encode_parameterInformation
-        : Encoder[SignatureInformation.ParameterInformation] =
-      SignatureInformation.ParameterInformation.toJson
-    val encode_activeParameterSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.documentationFormat.foreach: v =>
-        enc.field("documentationFormat", v, encode_documentationFormat)
-      a.parameterInformation.foreach: v =>
-        enc.field("parameterInformation", v, encode_parameterInformation)
-      a.activeParameterSupport.foreach: v =>
-        enc.field("activeParameterSupport", v, encode_activeParameterSupport)
-  end toJson
-end structures_SignatureHelpClientCapabilities_SignatureInformationCodec
-
-private[lsp] trait structures_SignatureHelpClientCapabilities_SignatureInformation_ParameterInformationCodec:
-  import structures.SignatureHelpClientCapabilities.SignatureInformation.*
-  given fromJson: Decoder[ParameterInformation] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_labelOffsetSupport: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for labelOffsetSupport <- dec.getOpt(
-          "labelOffsetSupport",
-          decode_labelOffsetSupport
-        )
-      yield ParameterInformation(
-        labelOffsetSupport
-      )
-  end fromJson
-  given toJson: Encoder[ParameterInformation] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_labelOffsetSupport: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      a.labelOffsetSupport.foreach: v =>
-        enc.field("labelOffsetSupport", v, encode_labelOffsetSupport)
-end structures_SignatureHelpClientCapabilities_SignatureInformation_ParameterInformationCodec
 
 private[lsp] trait structures_SignatureHelpContextCodec:
   import structures.*
@@ -12138,6 +12891,75 @@ private[lsp] trait structures_SignatureInformationCodec:
   end toJson
 end structures_SignatureInformationCodec
 
+private[lsp] trait structures_SnippetTextEditCodec:
+  import structures.*
+  given fromJson: Decoder[SnippetTextEdit] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_range: Decoder[structures.Range] = structures.Range.fromJson
+    val decode_snippet: Decoder[structures.StringValue] =
+      structures.StringValue.fromJson
+    val decode_annotationId: Decoder[aliases.ChangeAnnotationIdentifier] =
+      aliases.ChangeAnnotationIdentifier.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        range        <- dec.get("range", decode_range)
+        snippet      <- dec.get("snippet", decode_snippet)
+        annotationId <- dec.getOpt("annotationId", decode_annotationId)
+      yield SnippetTextEdit(
+        range,
+        snippet,
+        annotationId
+      )
+  end fromJson
+  given toJson: Encoder[SnippetTextEdit] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_range: Encoder[structures.Range] = structures.Range.toJson
+    val encode_snippet: Encoder[structures.StringValue] =
+      structures.StringValue.toJson
+    val encode_annotationId: Encoder[aliases.ChangeAnnotationIdentifier] =
+      aliases.ChangeAnnotationIdentifier.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("range", a.range, encode_range)
+      enc.field("snippet", a.snippet, encode_snippet)
+      a.annotationId.foreach: v =>
+        enc.field("annotationId", v, encode_annotationId)
+  end toJson
+end structures_SnippetTextEditCodec
+
+private[lsp] trait structures_StaleRequestSupportOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[StaleRequestSupportOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_cancel: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_retryOnContentModified: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    Dec.fromJsonObject: dec =>
+      for
+        cancel                 <- dec.get("cancel", decode_cancel)
+        retryOnContentModified <- dec.get(
+          "retryOnContentModified",
+          decode_retryOnContentModified
+        )
+      yield StaleRequestSupportOptions(
+        cancel,
+        retryOnContentModified
+      )
+  end fromJson
+  given toJson: Encoder[StaleRequestSupportOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_cancel: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_retryOnContentModified: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("cancel", a.cancel, encode_cancel)
+      enc.field(
+        "retryOnContentModified",
+        a.retryOnContentModified,
+        encode_retryOnContentModified
+      )
+  end toJson
+end structures_StaleRequestSupportOptionsCodec
+
 private[lsp] trait structures_StaticRegistrationOptionsCodec:
   import structures.*
   given fromJson: Decoder[StaticRegistrationOptions] =
@@ -12155,6 +12977,30 @@ private[lsp] trait structures_StaticRegistrationOptionsCodec:
       a.id.foreach: v =>
         enc.field("id", v, encode_id)
 end structures_StaticRegistrationOptionsCodec
+
+private[lsp] trait structures_StringValueCodec:
+  import structures.*
+  given fromJson: Decoder[StringValue] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_kind: Decoder["snippet"] = Decoder.decodeLiteralString["snippet"]
+    val decode_value: Decoder[String]   = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        kind  <- dec.get("kind", decode_kind)
+        value <- dec.get("value", decode_value)
+      yield StringValue(
+        kind,
+        value
+      )
+  end fromJson
+  given toJson: Encoder[StringValue] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_kind: Encoder["snippet"] = Encoder.encodeLiteralString["snippet"]
+    val encode_value: Encoder[String]   = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("kind", a.kind, encode_kind)
+      enc.field("value", a.value, encode_value)
+end structures_StringValueCodec
 
 private[lsp] trait structures_SymbolInformationCodec:
   import structures.*
@@ -12250,6 +13096,9 @@ private[lsp] trait structures_TextDocumentClientCapabilitiesCodec:
     val decode_synchronization
         : Decoder[structures.TextDocumentSyncClientCapabilities] =
       structures.TextDocumentSyncClientCapabilities.fromJson
+    val decode_filters
+        : Decoder[structures.TextDocumentFilterClientCapabilities] =
+      structures.TextDocumentFilterClientCapabilities.fromJson
     val decode_completion: Decoder[structures.CompletionClientCapabilities] =
       structures.CompletionClientCapabilities.fromJson
     val decode_hover: Decoder[structures.HoverClientCapabilities] =
@@ -12325,9 +13174,13 @@ private[lsp] trait structures_TextDocumentClientCapabilitiesCodec:
       structures.InlayHintClientCapabilities.fromJson
     val decode_diagnostic: Decoder[structures.DiagnosticClientCapabilities] =
       structures.DiagnosticClientCapabilities.fromJson
+    val decode_inlineCompletion
+        : Decoder[structures.InlineCompletionClientCapabilities] =
+      structures.InlineCompletionClientCapabilities.fromJson
     Dec.fromJsonObject: dec =>
       for
         synchronization <- dec.getOpt("synchronization", decode_synchronization)
+        filters         <- dec.getOpt("filters", decode_filters)
         completion      <- dec.getOpt("completion", decode_completion)
         hover           <- dec.getOpt("hover", decode_hover)
         signatureHelp   <- dec.getOpt("signatureHelp", decode_signatureHelp)
@@ -12364,13 +13217,18 @@ private[lsp] trait structures_TextDocumentClientCapabilitiesCodec:
           "linkedEditingRange",
           decode_linkedEditingRange
         )
-        moniker       <- dec.getOpt("moniker", decode_moniker)
-        typeHierarchy <- dec.getOpt("typeHierarchy", decode_typeHierarchy)
-        inlineValue   <- dec.getOpt("inlineValue", decode_inlineValue)
-        inlayHint     <- dec.getOpt("inlayHint", decode_inlayHint)
-        diagnostic    <- dec.getOpt("diagnostic", decode_diagnostic)
+        moniker          <- dec.getOpt("moniker", decode_moniker)
+        typeHierarchy    <- dec.getOpt("typeHierarchy", decode_typeHierarchy)
+        inlineValue      <- dec.getOpt("inlineValue", decode_inlineValue)
+        inlayHint        <- dec.getOpt("inlayHint", decode_inlayHint)
+        diagnostic       <- dec.getOpt("diagnostic", decode_diagnostic)
+        inlineCompletion <- dec.getOpt(
+          "inlineCompletion",
+          decode_inlineCompletion
+        )
       yield TextDocumentClientCapabilities(
         synchronization,
+        filters,
         completion,
         hover,
         signatureHelp,
@@ -12399,7 +13257,8 @@ private[lsp] trait structures_TextDocumentClientCapabilitiesCodec:
         typeHierarchy,
         inlineValue,
         inlayHint,
-        diagnostic
+        diagnostic,
+        inlineCompletion
       )
   end fromJson
   given toJson: Encoder[TextDocumentClientCapabilities] =
@@ -12407,6 +13266,9 @@ private[lsp] trait structures_TextDocumentClientCapabilitiesCodec:
     val encode_synchronization
         : Encoder[structures.TextDocumentSyncClientCapabilities] =
       structures.TextDocumentSyncClientCapabilities.toJson
+    val encode_filters
+        : Encoder[structures.TextDocumentFilterClientCapabilities] =
+      structures.TextDocumentFilterClientCapabilities.toJson
     val encode_completion: Encoder[structures.CompletionClientCapabilities] =
       structures.CompletionClientCapabilities.toJson
     val encode_hover: Encoder[structures.HoverClientCapabilities] =
@@ -12482,9 +13344,14 @@ private[lsp] trait structures_TextDocumentClientCapabilitiesCodec:
       structures.InlayHintClientCapabilities.toJson
     val encode_diagnostic: Encoder[structures.DiagnosticClientCapabilities] =
       structures.DiagnosticClientCapabilities.toJson
+    val encode_inlineCompletion
+        : Encoder[structures.InlineCompletionClientCapabilities] =
+      structures.InlineCompletionClientCapabilities.toJson
     Enc.toJsonObject: (enc, a) =>
       a.synchronization.foreach: v =>
         enc.field("synchronization", v, encode_synchronization)
+      a.filters.foreach: v =>
+        enc.field("filters", v, encode_filters)
       a.completion.foreach: v =>
         enc.field("completion", v, encode_completion)
       a.hover.foreach: v =>
@@ -12543,8 +13410,177 @@ private[lsp] trait structures_TextDocumentClientCapabilitiesCodec:
         enc.field("inlayHint", v, encode_inlayHint)
       a.diagnostic.foreach: v =>
         enc.field("diagnostic", v, encode_diagnostic)
+      a.inlineCompletion.foreach: v =>
+        enc.field("inlineCompletion", v, encode_inlineCompletion)
   end toJson
 end structures_TextDocumentClientCapabilitiesCodec
+
+private[lsp] trait structures_TextDocumentContentChangePartialCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentChangePartial] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_range: Decoder[structures.Range] = structures.Range.fromJson
+    val decode_rangeLength: Decoder[runtime.uinteger] = uinteger.fromJson
+    val decode_text: Decoder[String]                  = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        range       <- dec.get("range", decode_range)
+        rangeLength <- dec.getOpt("rangeLength", decode_rangeLength)
+        text        <- dec.get("text", decode_text)
+      yield TextDocumentContentChangePartial(
+        range,
+        rangeLength,
+        text
+      )
+  end fromJson
+  given toJson: Encoder[TextDocumentContentChangePartial] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_range: Encoder[structures.Range]       = structures.Range.toJson
+    val encode_rangeLength: Encoder[runtime.uinteger] = uinteger.toJson
+    val encode_text: Encoder[String]                  = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("range", a.range, encode_range)
+      a.rangeLength.foreach: v =>
+        enc.field("rangeLength", v, encode_rangeLength)
+      enc.field("text", a.text, encode_text)
+  end toJson
+end structures_TextDocumentContentChangePartialCodec
+
+private[lsp] trait structures_TextDocumentContentChangeWholeDocumentCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentChangeWholeDocument] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_text: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for text <- dec.get("text", decode_text)
+      yield TextDocumentContentChangeWholeDocument(
+        text
+      )
+  given toJson: Encoder[TextDocumentContentChangeWholeDocument] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_text: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("text", a.text, encode_text)
+end structures_TextDocumentContentChangeWholeDocumentCodec
+
+private[lsp] trait structures_TextDocumentContentClientCapabilitiesCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentClientCapabilities] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for dynamicRegistration <- dec.getOpt(
+          "dynamicRegistration",
+          decode_dynamicRegistration
+        )
+      yield TextDocumentContentClientCapabilities(
+        dynamicRegistration
+      )
+  end fromJson
+  given toJson: Encoder[TextDocumentContentClientCapabilities] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.dynamicRegistration.foreach: v =>
+        enc.field("dynamicRegistration", v, encode_dynamicRegistration)
+end structures_TextDocumentContentClientCapabilitiesCodec
+
+private[lsp] trait structures_TextDocumentContentOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_schemes: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    Dec.fromJsonObject: dec =>
+      for schemes <- dec.get("schemes", decode_schemes)
+      yield TextDocumentContentOptions(
+        schemes
+      )
+  given toJson: Encoder[TextDocumentContentOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_schemes: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("schemes", a.schemes, encode_schemes)
+end structures_TextDocumentContentOptionsCodec
+
+private[lsp] trait structures_TextDocumentContentParamsCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentParams] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_uri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
+    Dec.fromJsonObject: dec =>
+      for uri <- dec.get("uri", decode_uri)
+      yield TextDocumentContentParams(
+        uri
+      )
+  given toJson: Encoder[TextDocumentContentParams] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_uri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("uri", a.uri, encode_uri)
+end structures_TextDocumentContentParamsCodec
+
+private[lsp] trait structures_TextDocumentContentRefreshParamsCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentRefreshParams] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_uri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
+    Dec.fromJsonObject: dec =>
+      for uri <- dec.get("uri", decode_uri)
+      yield TextDocumentContentRefreshParams(
+        uri
+      )
+  given toJson: Encoder[TextDocumentContentRefreshParams] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_uri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("uri", a.uri, encode_uri)
+end structures_TextDocumentContentRefreshParamsCodec
+
+private[lsp] trait structures_TextDocumentContentRegistrationOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentRegistrationOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_schemes: Decoder[Vector[String]] =
+      Decoder.decodeVector(Decoder.decodeString)
+    val decode_id: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for
+        schemes <- dec.get("schemes", decode_schemes)
+        id      <- dec.getOpt("id", decode_id)
+      yield TextDocumentContentRegistrationOptions(
+        schemes,
+        id
+      )
+  end fromJson
+  given toJson: Encoder[TextDocumentContentRegistrationOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_schemes: Encoder[Vector[String]] =
+      Encoder.encodeVector(Encoder.encodeString)
+    val encode_id: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("schemes", a.schemes, encode_schemes)
+      a.id.foreach: v =>
+        enc.field("id", v, encode_id)
+end structures_TextDocumentContentRegistrationOptionsCodec
+
+private[lsp] trait structures_TextDocumentContentResultCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentContentResult] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_text: Decoder[String] = Decoder.decodeString
+    Dec.fromJsonObject: dec =>
+      for text <- dec.get("text", decode_text)
+      yield TextDocumentContentResult(
+        text
+      )
+  given toJson: Encoder[TextDocumentContentResult] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_text: Encoder[String] = Encoder.encodeString
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("text", a.text, encode_text)
+end structures_TextDocumentContentResultCodec
 
 private[lsp] trait structures_TextDocumentEditCodec:
   import structures.*
@@ -12553,12 +13589,18 @@ private[lsp] trait structures_TextDocumentEditCodec:
     val decode_textDocument
         : Decoder[structures.OptionalVersionedTextDocumentIdentifier] =
       structures.OptionalVersionedTextDocumentIdentifier.fromJson
-    val decode_edits: Decoder[
-      Vector[(structures.TextEdit | structures.AnnotatedTextEdit)]
-    ] = Decoder.decodeVector(
-      Dec.union2[structures.TextEdit, structures.AnnotatedTextEdit](
+    val decode_edits: Decoder[Vector[
+      (structures.TextEdit | structures.AnnotatedTextEdit |
+        structures.SnippetTextEdit)
+    ]] = Decoder.decodeVector(
+      Dec.union3[
+        structures.TextEdit,
+        structures.AnnotatedTextEdit,
+        structures.SnippetTextEdit
+      ](
         structures.TextEdit.fromJson,
-        structures.AnnotatedTextEdit.fromJson
+        structures.AnnotatedTextEdit.fromJson,
+        structures.SnippetTextEdit.fromJson
       )
     )
     Dec.fromJsonObject: dec =>
@@ -12575,12 +13617,18 @@ private[lsp] trait structures_TextDocumentEditCodec:
     val encode_textDocument
         : Encoder[structures.OptionalVersionedTextDocumentIdentifier] =
       structures.OptionalVersionedTextDocumentIdentifier.toJson
-    val encode_edits: Encoder[
-      Vector[(structures.TextEdit | structures.AnnotatedTextEdit)]
-    ] = Encoder.encodeVector(
-      Enc.union2[structures.TextEdit, structures.AnnotatedTextEdit](
+    val encode_edits: Encoder[Vector[
+      (structures.TextEdit | structures.AnnotatedTextEdit |
+        structures.SnippetTextEdit)
+    ]] = Encoder.encodeVector(
+      Enc.union3[
+        structures.TextEdit,
+        structures.AnnotatedTextEdit,
+        structures.SnippetTextEdit
+      ](
         structures.TextEdit.toJson,
-        structures.AnnotatedTextEdit.toJson
+        structures.AnnotatedTextEdit.toJson,
+        structures.SnippetTextEdit.toJson
       )
     )
     Enc.toJsonObject: (enc, a) =>
@@ -12588,6 +13636,130 @@ private[lsp] trait structures_TextDocumentEditCodec:
       enc.field("edits", a.edits, encode_edits)
   end toJson
 end structures_TextDocumentEditCodec
+
+private[lsp] trait structures_TextDocumentFilterClientCapabilitiesCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentFilterClientCapabilities] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_relativePatternSupport: Decoder[Boolean] = Decoder.decodeBoolean
+    Dec.fromJsonObject: dec =>
+      for relativePatternSupport <- dec.getOpt(
+          "relativePatternSupport",
+          decode_relativePatternSupport
+        )
+      yield TextDocumentFilterClientCapabilities(
+        relativePatternSupport
+      )
+  end fromJson
+  given toJson: Encoder[TextDocumentFilterClientCapabilities] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_relativePatternSupport: Encoder[Boolean] = Encoder.encodeBoolean
+    Enc.toJsonObject: (enc, a) =>
+      a.relativePatternSupport.foreach: v =>
+        enc.field("relativePatternSupport", v, encode_relativePatternSupport)
+end structures_TextDocumentFilterClientCapabilitiesCodec
+
+private[lsp] trait structures_TextDocumentFilterLanguageCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentFilterLanguage] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_language: Decoder[String]             = Decoder.decodeString
+    val decode_scheme: Decoder[String]               = Decoder.decodeString
+    val decode_pattern: Decoder[aliases.GlobPattern] =
+      aliases.GlobPattern.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        language <- dec.get("language", decode_language)
+        scheme   <- dec.getOpt("scheme", decode_scheme)
+        pattern  <- dec.getOpt("pattern", decode_pattern)
+      yield TextDocumentFilterLanguage(
+        language,
+        scheme,
+        pattern
+      )
+  end fromJson
+  given toJson: Encoder[TextDocumentFilterLanguage] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_language: Encoder[String]             = Encoder.encodeString
+    val encode_scheme: Encoder[String]               = Encoder.encodeString
+    val encode_pattern: Encoder[aliases.GlobPattern] =
+      aliases.GlobPattern.toJson
+    Enc.toJsonObject: (enc, a) =>
+      enc.field("language", a.language, encode_language)
+      a.scheme.foreach: v =>
+        enc.field("scheme", v, encode_scheme)
+      a.pattern.foreach: v =>
+        enc.field("pattern", v, encode_pattern)
+  end toJson
+end structures_TextDocumentFilterLanguageCodec
+
+private[lsp] trait structures_TextDocumentFilterPatternCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentFilterPattern] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_language: Decoder[String]             = Decoder.decodeString
+    val decode_scheme: Decoder[String]               = Decoder.decodeString
+    val decode_pattern: Decoder[aliases.GlobPattern] =
+      aliases.GlobPattern.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        language <- dec.getOpt("language", decode_language)
+        scheme   <- dec.getOpt("scheme", decode_scheme)
+        pattern  <- dec.get("pattern", decode_pattern)
+      yield TextDocumentFilterPattern(
+        language,
+        scheme,
+        pattern
+      )
+  end fromJson
+  given toJson: Encoder[TextDocumentFilterPattern] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_language: Encoder[String]             = Encoder.encodeString
+    val encode_scheme: Encoder[String]               = Encoder.encodeString
+    val encode_pattern: Encoder[aliases.GlobPattern] =
+      aliases.GlobPattern.toJson
+    Enc.toJsonObject: (enc, a) =>
+      a.language.foreach: v =>
+        enc.field("language", v, encode_language)
+      a.scheme.foreach: v =>
+        enc.field("scheme", v, encode_scheme)
+      enc.field("pattern", a.pattern, encode_pattern)
+  end toJson
+end structures_TextDocumentFilterPatternCodec
+
+private[lsp] trait structures_TextDocumentFilterSchemeCodec:
+  import structures.*
+  given fromJson: Decoder[TextDocumentFilterScheme] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_language: Decoder[String]             = Decoder.decodeString
+    val decode_scheme: Decoder[String]               = Decoder.decodeString
+    val decode_pattern: Decoder[aliases.GlobPattern] =
+      aliases.GlobPattern.fromJson
+    Dec.fromJsonObject: dec =>
+      for
+        language <- dec.getOpt("language", decode_language)
+        scheme   <- dec.get("scheme", decode_scheme)
+        pattern  <- dec.getOpt("pattern", decode_pattern)
+      yield TextDocumentFilterScheme(
+        language,
+        scheme,
+        pattern
+      )
+  end fromJson
+  given toJson: Encoder[TextDocumentFilterScheme] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_language: Encoder[String]             = Encoder.encodeString
+    val encode_scheme: Encoder[String]               = Encoder.encodeString
+    val encode_pattern: Encoder[aliases.GlobPattern] =
+      aliases.GlobPattern.toJson
+    Enc.toJsonObject: (enc, a) =>
+      a.language.foreach: v =>
+        enc.field("language", v, encode_language)
+      enc.field("scheme", a.scheme, encode_scheme)
+      a.pattern.foreach: v =>
+        enc.field("pattern", v, encode_pattern)
+  end toJson
+end structures_TextDocumentFilterSchemeCodec
 
 private[lsp] trait structures_TextDocumentIdentifierCodec:
   import structures.*
@@ -12611,9 +13783,10 @@ private[lsp] trait structures_TextDocumentItemCodec:
   given fromJson: Decoder[TextDocumentItem] =
     // cache all decoders for this type when fromJson first initialised
     val decode_uri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
-    val decode_languageId: Decoder[String]       = Decoder.decodeString
-    val decode_version: Decoder[Int]             = Decoder.decodeInt
-    val decode_text: Decoder[String]             = Decoder.decodeString
+    val decode_languageId: Decoder[enumerations.LanguageKind] =
+      enumerations.LanguageKind.fromJson
+    val decode_version: Decoder[Int] = Decoder.decodeInt
+    val decode_text: Decoder[String] = Decoder.decodeString
     Dec.fromJsonObject: dec =>
       for
         uri        <- dec.get("uri", decode_uri)
@@ -12630,9 +13803,10 @@ private[lsp] trait structures_TextDocumentItemCodec:
   given toJson: Encoder[TextDocumentItem] =
     // cache all encoders for this type when toJson first initialised
     val encode_uri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
-    val encode_languageId: Encoder[String]       = Encoder.encodeString
-    val encode_version: Encoder[Int]             = Encoder.encodeInt
-    val encode_text: Encoder[String]             = Encoder.encodeString
+    val encode_languageId: Encoder[enumerations.LanguageKind] =
+      enumerations.LanguageKind.toJson
+    val encode_version: Encoder[Int] = Encoder.encodeInt
+    val encode_text: Encoder[String] = Encoder.encodeString
     Enc.toJsonObject: (enc, a) =>
       enc.field("uri", a.uri, encode_uri)
       enc.field("languageId", a.languageId, encode_languageId)
@@ -13660,6 +14834,12 @@ private[lsp] trait structures_WorkspaceClientCapabilitiesCodec:
     val decode_diagnostics
         : Decoder[structures.DiagnosticWorkspaceClientCapabilities] =
       structures.DiagnosticWorkspaceClientCapabilities.fromJson
+    val decode_foldingRange
+        : Decoder[structures.FoldingRangeWorkspaceClientCapabilities] =
+      structures.FoldingRangeWorkspaceClientCapabilities.fromJson
+    val decode_textDocumentContent
+        : Decoder[structures.TextDocumentContentClientCapabilities] =
+      structures.TextDocumentContentClientCapabilities.fromJson
     Dec.fromJsonObject: dec =>
       for
         applyEdit     <- dec.getOpt("applyEdit", decode_applyEdit)
@@ -13685,6 +14865,11 @@ private[lsp] trait structures_WorkspaceClientCapabilitiesCodec:
         inlineValue    <- dec.getOpt("inlineValue", decode_inlineValue)
         inlayHint      <- dec.getOpt("inlayHint", decode_inlayHint)
         diagnostics    <- dec.getOpt("diagnostics", decode_diagnostics)
+        foldingRange   <- dec.getOpt("foldingRange", decode_foldingRange)
+        textDocumentContent <- dec.getOpt(
+          "textDocumentContent",
+          decode_textDocumentContent
+        )
       yield WorkspaceClientCapabilities(
         applyEdit,
         workspaceEdit,
@@ -13699,7 +14884,9 @@ private[lsp] trait structures_WorkspaceClientCapabilitiesCodec:
         fileOperations,
         inlineValue,
         inlayHint,
-        diagnostics
+        diagnostics,
+        foldingRange,
+        textDocumentContent
       )
   end fromJson
   given toJson: Encoder[WorkspaceClientCapabilities] =
@@ -13739,6 +14926,12 @@ private[lsp] trait structures_WorkspaceClientCapabilitiesCodec:
     val encode_diagnostics
         : Encoder[structures.DiagnosticWorkspaceClientCapabilities] =
       structures.DiagnosticWorkspaceClientCapabilities.toJson
+    val encode_foldingRange
+        : Encoder[structures.FoldingRangeWorkspaceClientCapabilities] =
+      structures.FoldingRangeWorkspaceClientCapabilities.toJson
+    val encode_textDocumentContent
+        : Encoder[structures.TextDocumentContentClientCapabilities] =
+      structures.TextDocumentContentClientCapabilities.toJson
     Enc.toJsonObject: (enc, a) =>
       a.applyEdit.foreach: v =>
         enc.field("applyEdit", v, encode_applyEdit)
@@ -13768,6 +14961,10 @@ private[lsp] trait structures_WorkspaceClientCapabilitiesCodec:
         enc.field("inlayHint", v, encode_inlayHint)
       a.diagnostics.foreach: v =>
         enc.field("diagnostics", v, encode_diagnostics)
+      a.foldingRange.foreach: v =>
+        enc.field("foldingRange", v, encode_foldingRange)
+      a.textDocumentContent.foreach: v =>
+        enc.field("textDocumentContent", v, encode_textDocumentContent)
   end toJson
 end structures_WorkspaceClientCapabilitiesCodec
 
@@ -13967,8 +15164,10 @@ private[lsp] trait structures_WorkspaceEditClientCapabilitiesCodec:
       enumerations.FailureHandlingKind.fromJson
     val decode_normalizesLineEndings: Decoder[Boolean] = Decoder.decodeBoolean
     val decode_changeAnnotationSupport
-        : Decoder[WorkspaceEditClientCapabilities.ChangeAnnotationSupport] =
-      WorkspaceEditClientCapabilities.ChangeAnnotationSupport.fromJson
+        : Decoder[structures.ChangeAnnotationsSupportOptions] =
+      structures.ChangeAnnotationsSupportOptions.fromJson
+    val decode_metadataSupport: Decoder[Boolean]    = Decoder.decodeBoolean
+    val decode_snippetEditSupport: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
       for
         documentChanges <- dec.getOpt("documentChanges", decode_documentChanges)
@@ -13985,12 +15184,19 @@ private[lsp] trait structures_WorkspaceEditClientCapabilitiesCodec:
           "changeAnnotationSupport",
           decode_changeAnnotationSupport
         )
+        metadataSupport <- dec.getOpt("metadataSupport", decode_metadataSupport)
+        snippetEditSupport <- dec.getOpt(
+          "snippetEditSupport",
+          decode_snippetEditSupport
+        )
       yield WorkspaceEditClientCapabilities(
         documentChanges,
         resourceOperations,
         failureHandling,
         normalizesLineEndings,
-        changeAnnotationSupport
+        changeAnnotationSupport,
+        metadataSupport,
+        snippetEditSupport
       )
   end fromJson
   given toJson: Encoder[WorkspaceEditClientCapabilities] =
@@ -14003,8 +15209,10 @@ private[lsp] trait structures_WorkspaceEditClientCapabilitiesCodec:
       enumerations.FailureHandlingKind.toJson
     val encode_normalizesLineEndings: Encoder[Boolean] = Encoder.encodeBoolean
     val encode_changeAnnotationSupport
-        : Encoder[WorkspaceEditClientCapabilities.ChangeAnnotationSupport] =
-      WorkspaceEditClientCapabilities.ChangeAnnotationSupport.toJson
+        : Encoder[structures.ChangeAnnotationsSupportOptions] =
+      structures.ChangeAnnotationsSupportOptions.toJson
+    val encode_metadataSupport: Encoder[Boolean]    = Encoder.encodeBoolean
+    val encode_snippetEditSupport: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
       a.documentChanges.foreach: v =>
         enc.field("documentChanges", v, encode_documentChanges)
@@ -14016,26 +15224,30 @@ private[lsp] trait structures_WorkspaceEditClientCapabilitiesCodec:
         enc.field("normalizesLineEndings", v, encode_normalizesLineEndings)
       a.changeAnnotationSupport.foreach: v =>
         enc.field("changeAnnotationSupport", v, encode_changeAnnotationSupport)
+      a.metadataSupport.foreach: v =>
+        enc.field("metadataSupport", v, encode_metadataSupport)
+      a.snippetEditSupport.foreach: v =>
+        enc.field("snippetEditSupport", v, encode_snippetEditSupport)
   end toJson
 end structures_WorkspaceEditClientCapabilitiesCodec
 
-private[lsp] trait structures_WorkspaceEditClientCapabilities_ChangeAnnotationSupportCodec:
-  import structures.WorkspaceEditClientCapabilities.*
-  given fromJson: Decoder[ChangeAnnotationSupport] =
+private[lsp] trait structures_WorkspaceEditMetadataCodec:
+  import structures.*
+  given fromJson: Decoder[WorkspaceEditMetadata] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_groupsOnLabel: Decoder[Boolean] = Decoder.decodeBoolean
+    val decode_isRefactoring: Decoder[Boolean] = Decoder.decodeBoolean
     Dec.fromJsonObject: dec =>
-      for groupsOnLabel <- dec.getOpt("groupsOnLabel", decode_groupsOnLabel)
-      yield ChangeAnnotationSupport(
-        groupsOnLabel
+      for isRefactoring <- dec.getOpt("isRefactoring", decode_isRefactoring)
+      yield WorkspaceEditMetadata(
+        isRefactoring
       )
-  given toJson: Encoder[ChangeAnnotationSupport] =
+  given toJson: Encoder[WorkspaceEditMetadata] =
     // cache all encoders for this type when toJson first initialised
-    val encode_groupsOnLabel: Encoder[Boolean] = Encoder.encodeBoolean
+    val encode_isRefactoring: Encoder[Boolean] = Encoder.encodeBoolean
     Enc.toJsonObject: (enc, a) =>
-      a.groupsOnLabel.foreach: v =>
-        enc.field("groupsOnLabel", v, encode_groupsOnLabel)
-end structures_WorkspaceEditClientCapabilities_ChangeAnnotationSupportCodec
+      a.isRefactoring.foreach: v =>
+        enc.field("isRefactoring", v, encode_isRefactoring)
+end structures_WorkspaceEditMetadataCodec
 
 private[lsp] trait structures_WorkspaceFolderCodec:
   import structures.*
@@ -14189,14 +15401,78 @@ private[lsp] trait structures_WorkspaceFullDocumentDiagnosticReportCodec:
   end toJson
 end structures_WorkspaceFullDocumentDiagnosticReportCodec
 
+private[lsp] trait structures_WorkspaceOptionsCodec:
+  import structures.*
+  given fromJson: Decoder[WorkspaceOptions] =
+    // cache all decoders for this type when fromJson first initialised
+    val decode_workspaceFolders
+        : Decoder[structures.WorkspaceFoldersServerCapabilities] =
+      structures.WorkspaceFoldersServerCapabilities.fromJson
+    val decode_fileOperations: Decoder[structures.FileOperationOptions] =
+      structures.FileOperationOptions.fromJson
+    val decode_textDocumentContent: Decoder[
+      (structures.TextDocumentContentOptions |
+        structures.TextDocumentContentRegistrationOptions)
+    ] = Dec.union2[
+      structures.TextDocumentContentOptions,
+      structures.TextDocumentContentRegistrationOptions
+    ](
+      structures.TextDocumentContentOptions.fromJson,
+      structures.TextDocumentContentRegistrationOptions.fromJson
+    )
+    Dec.fromJsonObject: dec =>
+      for
+        workspaceFolders <- dec.getOpt(
+          "workspaceFolders",
+          decode_workspaceFolders
+        )
+        fileOperations <- dec.getOpt("fileOperations", decode_fileOperations)
+        textDocumentContent <- dec.getOpt(
+          "textDocumentContent",
+          decode_textDocumentContent
+        )
+      yield WorkspaceOptions(
+        workspaceFolders,
+        fileOperations,
+        textDocumentContent
+      )
+  end fromJson
+  given toJson: Encoder[WorkspaceOptions] =
+    // cache all encoders for this type when toJson first initialised
+    val encode_workspaceFolders
+        : Encoder[structures.WorkspaceFoldersServerCapabilities] =
+      structures.WorkspaceFoldersServerCapabilities.toJson
+    val encode_fileOperations: Encoder[structures.FileOperationOptions] =
+      structures.FileOperationOptions.toJson
+    val encode_textDocumentContent: Encoder[
+      (structures.TextDocumentContentOptions |
+        structures.TextDocumentContentRegistrationOptions)
+    ] = Enc.union2[
+      structures.TextDocumentContentOptions,
+      structures.TextDocumentContentRegistrationOptions
+    ](
+      structures.TextDocumentContentOptions.toJson,
+      structures.TextDocumentContentRegistrationOptions.toJson
+    )
+    Enc.toJsonObject: (enc, a) =>
+      a.workspaceFolders.foreach: v =>
+        enc.field("workspaceFolders", v, encode_workspaceFolders)
+      a.fileOperations.foreach: v =>
+        enc.field("fileOperations", v, encode_fileOperations)
+      a.textDocumentContent.foreach: v =>
+        enc.field("textDocumentContent", v, encode_textDocumentContent)
+  end toJson
+end structures_WorkspaceOptionsCodec
+
 private[lsp] trait structures_WorkspaceSymbolCodec:
   import structures.*
   given fromJson: Decoder[WorkspaceSymbol] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_location: Decoder[(structures.Location | WorkspaceSymbol.S0)] =
-      Dec.union2[structures.Location, WorkspaceSymbol.S0](
+    val decode_location
+        : Decoder[(structures.Location | structures.LocationUriOnly)] =
+      Dec.union2[structures.Location, structures.LocationUriOnly](
         structures.Location.fromJson,
-        WorkspaceSymbol.S0.fromJson
+        structures.LocationUriOnly.fromJson
       )
     val decode_data: Decoder[io.circe.Json]           = Decoder.decodeJson
     val decode_name: Decoder[String]                  = Decoder.decodeString
@@ -14224,10 +15500,11 @@ private[lsp] trait structures_WorkspaceSymbolCodec:
   end fromJson
   given toJson: Encoder[WorkspaceSymbol] =
     // cache all encoders for this type when toJson first initialised
-    val encode_location: Encoder[(structures.Location | WorkspaceSymbol.S0)] =
-      Enc.union2[structures.Location, WorkspaceSymbol.S0](
+    val encode_location
+        : Encoder[(structures.Location | structures.LocationUriOnly)] =
+      Enc.union2[structures.Location, structures.LocationUriOnly](
         structures.Location.toJson,
-        WorkspaceSymbol.S0.toJson
+        structures.LocationUriOnly.toJson
       )
     val encode_data: Encoder[io.circe.Json]           = Encoder.encodeJson
     val encode_name: Encoder[String]                  = Encoder.encodeString
@@ -14249,37 +15526,17 @@ private[lsp] trait structures_WorkspaceSymbolCodec:
   end toJson
 end structures_WorkspaceSymbolCodec
 
-private[lsp] trait structures_WorkspaceSymbol_S0Codec:
-  import structures.WorkspaceSymbol.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_uri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
-    Dec.fromJsonObject: dec =>
-      for uri <- dec.get("uri", decode_uri)
-      yield S0(
-        uri
-      )
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_uri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("uri", a.uri, encode_uri)
-end structures_WorkspaceSymbol_S0Codec
-
 private[lsp] trait structures_WorkspaceSymbolClientCapabilitiesCodec:
   import structures.*
   given fromJson: Decoder[WorkspaceSymbolClientCapabilities] =
     // cache all decoders for this type when fromJson first initialised
     val decode_dynamicRegistration: Decoder[Boolean] = Decoder.decodeBoolean
-    val decode_symbolKind
-        : Decoder[WorkspaceSymbolClientCapabilities.SymbolKind] =
-      WorkspaceSymbolClientCapabilities.SymbolKind.fromJson
-    val decode_tagSupport
-        : Decoder[WorkspaceSymbolClientCapabilities.TagSupport] =
-      WorkspaceSymbolClientCapabilities.TagSupport.fromJson
-    val decode_resolveSupport
-        : Decoder[WorkspaceSymbolClientCapabilities.ResolveSupport] =
-      WorkspaceSymbolClientCapabilities.ResolveSupport.fromJson
+    val decode_symbolKind: Decoder[structures.ClientSymbolKindOptions] =
+      structures.ClientSymbolKindOptions.fromJson
+    val decode_tagSupport: Decoder[structures.ClientSymbolTagOptions] =
+      structures.ClientSymbolTagOptions.fromJson
+    val decode_resolveSupport: Decoder[structures.ClientSymbolResolveOptions] =
+      structures.ClientSymbolResolveOptions.fromJson
     Dec.fromJsonObject: dec =>
       for
         dynamicRegistration <- dec.getOpt(
@@ -14299,15 +15556,12 @@ private[lsp] trait structures_WorkspaceSymbolClientCapabilitiesCodec:
   given toJson: Encoder[WorkspaceSymbolClientCapabilities] =
     // cache all encoders for this type when toJson first initialised
     val encode_dynamicRegistration: Encoder[Boolean] = Encoder.encodeBoolean
-    val encode_symbolKind
-        : Encoder[WorkspaceSymbolClientCapabilities.SymbolKind] =
-      WorkspaceSymbolClientCapabilities.SymbolKind.toJson
-    val encode_tagSupport
-        : Encoder[WorkspaceSymbolClientCapabilities.TagSupport] =
-      WorkspaceSymbolClientCapabilities.TagSupport.toJson
-    val encode_resolveSupport
-        : Encoder[WorkspaceSymbolClientCapabilities.ResolveSupport] =
-      WorkspaceSymbolClientCapabilities.ResolveSupport.toJson
+    val encode_symbolKind: Encoder[structures.ClientSymbolKindOptions] =
+      structures.ClientSymbolKindOptions.toJson
+    val encode_tagSupport: Encoder[structures.ClientSymbolTagOptions] =
+      structures.ClientSymbolTagOptions.toJson
+    val encode_resolveSupport: Encoder[structures.ClientSymbolResolveOptions] =
+      structures.ClientSymbolResolveOptions.toJson
     Enc.toJsonObject: (enc, a) =>
       a.dynamicRegistration.foreach: v =>
         enc.field("dynamicRegistration", v, encode_dynamicRegistration)
@@ -14319,64 +15573,6 @@ private[lsp] trait structures_WorkspaceSymbolClientCapabilitiesCodec:
         enc.field("resolveSupport", v, encode_resolveSupport)
   end toJson
 end structures_WorkspaceSymbolClientCapabilitiesCodec
-
-private[lsp] trait structures_WorkspaceSymbolClientCapabilities_SymbolKindCodec:
-  import structures.WorkspaceSymbolClientCapabilities.*
-  given fromJson: Decoder[SymbolKind] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.SymbolKind]] =
-      Decoder.decodeVector(enumerations.SymbolKind.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.getOpt("valueSet", decode_valueSet)
-      yield SymbolKind(
-        valueSet
-      )
-  given toJson: Encoder[SymbolKind] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.SymbolKind]] =
-      Encoder.encodeVector(enumerations.SymbolKind.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      a.valueSet.foreach: v =>
-        enc.field("valueSet", v, encode_valueSet)
-end structures_WorkspaceSymbolClientCapabilities_SymbolKindCodec
-
-private[lsp] trait structures_WorkspaceSymbolClientCapabilities_TagSupportCodec:
-  import structures.WorkspaceSymbolClientCapabilities.*
-  given fromJson: Decoder[TagSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_valueSet: Decoder[Vector[enumerations.SymbolTag]] =
-      Decoder.decodeVector(enumerations.SymbolTag.fromJson)
-    Dec.fromJsonObject: dec =>
-      for valueSet <- dec.get("valueSet", decode_valueSet)
-      yield TagSupport(
-        valueSet
-      )
-  given toJson: Encoder[TagSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_valueSet: Encoder[Vector[enumerations.SymbolTag]] =
-      Encoder.encodeVector(enumerations.SymbolTag.toJson)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("valueSet", a.valueSet, encode_valueSet)
-end structures_WorkspaceSymbolClientCapabilities_TagSupportCodec
-
-private[lsp] trait structures_WorkspaceSymbolClientCapabilities_ResolveSupportCodec:
-  import structures.WorkspaceSymbolClientCapabilities.*
-  given fromJson: Decoder[ResolveSupport] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_properties: Decoder[Vector[String]] =
-      Decoder.decodeVector(Decoder.decodeString)
-    Dec.fromJsonObject: dec =>
-      for properties <- dec.get("properties", decode_properties)
-      yield ResolveSupport(
-        properties
-      )
-  given toJson: Encoder[ResolveSupport] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_properties: Encoder[Vector[String]] =
-      Encoder.encodeVector(Encoder.encodeString)
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("properties", a.properties, encode_properties)
-end structures_WorkspaceSymbolClientCapabilities_ResolveSupportCodec
 
 private[lsp] trait structures_WorkspaceSymbolOptionsCodec:
   import structures.*
@@ -14510,9 +15706,9 @@ private[lsp] trait structures__InitializeParamsCodec:
   import structures.*
   given fromJson: Decoder[_InitializeParams] =
     // cache all decoders for this type when fromJson first initialised
-    val decode_processId: Decoder[Int] = Decoder.decodeInt
-    val decode_clientInfo: Decoder[_InitializeParams.ClientInfo] =
-      _InitializeParams.ClientInfo.fromJson
+    val decode_processId: Decoder[Int]                    = Decoder.decodeInt
+    val decode_clientInfo: Decoder[structures.ClientInfo] =
+      structures.ClientInfo.fromJson
     val decode_locale: Decoder[String]               = Decoder.decodeString
     val decode_rootPath: Decoder[String]             = Decoder.decodeString
     val decode_rootUri: Decoder[runtime.DocumentUri] = DocumentUri.fromJson
@@ -14520,8 +15716,8 @@ private[lsp] trait structures__InitializeParamsCodec:
       structures.ClientCapabilities.fromJson
     val decode_initializationOptions: Decoder[io.circe.Json] =
       Decoder.decodeJson
-    val decode_trace: Decoder[enumerations.TraceValues] =
-      enumerations.TraceValues.fromJson
+    val decode_trace: Decoder[enumerations.TraceValue] =
+      enumerations.TraceValue.fromJson
     val decode_workDoneToken: Decoder[aliases.ProgressToken] =
       aliases.ProgressToken.fromJson
     Dec.fromJsonObject: dec =>
@@ -14552,9 +15748,9 @@ private[lsp] trait structures__InitializeParamsCodec:
   end fromJson
   given toJson: Encoder[_InitializeParams] =
     // cache all encoders for this type when toJson first initialised
-    val encode_processId: Encoder[Int] = Encoder.encodeInt
-    val encode_clientInfo: Encoder[_InitializeParams.ClientInfo] =
-      _InitializeParams.ClientInfo.toJson
+    val encode_processId: Encoder[Int]                    = Encoder.encodeInt
+    val encode_clientInfo: Encoder[structures.ClientInfo] =
+      structures.ClientInfo.toJson
     val encode_locale: Encoder[String]               = Encoder.encodeString
     val encode_rootPath: Encoder[String]             = Encoder.encodeString
     val encode_rootUri: Encoder[runtime.DocumentUri] = DocumentUri.toJson
@@ -14562,8 +15758,8 @@ private[lsp] trait structures__InitializeParamsCodec:
       structures.ClientCapabilities.toJson
     val encode_initializationOptions: Encoder[io.circe.Json] =
       Encoder.encodeJson
-    val encode_trace: Encoder[enumerations.TraceValues] =
-      enumerations.TraceValues.toJson
+    val encode_trace: Encoder[enumerations.TraceValue] =
+      enumerations.TraceValue.toJson
     val encode_workDoneToken: Encoder[aliases.ProgressToken] =
       aliases.ProgressToken.toJson
     Enc.toJsonObject: (enc, a) =>
@@ -14586,31 +15782,6 @@ private[lsp] trait structures__InitializeParamsCodec:
         enc.field("workDoneToken", v, encode_workDoneToken)
   end toJson
 end structures__InitializeParamsCodec
-
-private[lsp] trait structures__InitializeParams_ClientInfoCodec:
-  import structures._InitializeParams.*
-  given fromJson: Decoder[ClientInfo] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_name: Decoder[String]    = Decoder.decodeString
-    val decode_version: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        name    <- dec.get("name", decode_name)
-        version <- dec.getOpt("version", decode_version)
-      yield ClientInfo(
-        name,
-        version
-      )
-  end fromJson
-  given toJson: Encoder[ClientInfo] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_name: Encoder[String]    = Encoder.encodeString
-    val encode_version: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("name", a.name, encode_name)
-      a.version.foreach: v =>
-        enc.field("version", v, encode_version)
-end structures__InitializeParams_ClientInfoCodec
 
 private[lsp] trait aliases_ChangeAnnotationIdentifier:
 
@@ -14698,6 +15869,31 @@ private[lsp] trait aliases_DocumentDiagnosticReport:
       )
       .asInstanceOf[Encoder[DocumentDiagnosticReport]]
 end aliases_DocumentDiagnosticReport
+
+private[lsp] trait aliases_DocumentDiagnosticReportProgress:
+
+  given fromJson: Decoder[DocumentDiagnosticReportProgress] =
+    Dec
+      .union2[
+        aliases.DocumentDiagnosticReport,
+        structures.DocumentDiagnosticReportPartialResult
+      ](
+        aliases.DocumentDiagnosticReport.fromJson,
+        structures.DocumentDiagnosticReportPartialResult.fromJson
+      )
+      .asInstanceOf[Decoder[DocumentDiagnosticReportProgress]]
+
+  given toJson: Encoder[DocumentDiagnosticReportProgress] =
+    Enc
+      .union2[
+        aliases.DocumentDiagnosticReport,
+        structures.DocumentDiagnosticReportPartialResult
+      ](
+        aliases.DocumentDiagnosticReport.toJson,
+        structures.DocumentDiagnosticReportPartialResult.toJson
+      )
+      .asInstanceOf[Encoder[DocumentDiagnosticReportProgress]]
+end aliases_DocumentDiagnosticReportProgress
 
 private[lsp] trait aliases_DocumentFilter:
 
@@ -14802,169 +15998,49 @@ private[lsp] trait aliases_MarkedString:
 
   given fromJson: Decoder[MarkedString] =
     Dec
-      .union2[String, MarkedString.S0](
+      .union2[String, structures.MarkedStringWithLanguage](
         Decoder.decodeString,
-        MarkedString.S0.fromJson
+        structures.MarkedStringWithLanguage.fromJson
       )
       .asInstanceOf[Decoder[MarkedString]]
 
   given toJson: Encoder[MarkedString] =
     Enc
-      .union2[String, MarkedString.S0](
+      .union2[String, structures.MarkedStringWithLanguage](
         Encoder.encodeString,
-        MarkedString.S0.toJson
+        structures.MarkedStringWithLanguage.toJson
       )
       .asInstanceOf[Encoder[MarkedString]]
 end aliases_MarkedString
-
-private[lsp] trait aliases_MarkedString_S0Codec:
-  import aliases.MarkedString.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    val decode_value: Decoder[String]    = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        language <- dec.get("language", decode_language)
-        value    <- dec.get("value", decode_value)
-      yield S0(
-        language,
-        value
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    val encode_value: Encoder[String]    = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("language", a.language, encode_language)
-      enc.field("value", a.value, encode_value)
-end aliases_MarkedString_S0Codec
 
 private[lsp] trait aliases_NotebookDocumentFilter:
 
   given fromJson: Decoder[NotebookDocumentFilter] =
     Dec
       .union3[
-        NotebookDocumentFilter.S0,
-        NotebookDocumentFilter.S1,
-        NotebookDocumentFilter.S2
+        structures.NotebookDocumentFilterNotebookType,
+        structures.NotebookDocumentFilterScheme,
+        structures.NotebookDocumentFilterPattern
       ](
-        NotebookDocumentFilter.S0.fromJson,
-        NotebookDocumentFilter.S1.fromJson,
-        NotebookDocumentFilter.S2.fromJson
+        structures.NotebookDocumentFilterNotebookType.fromJson,
+        structures.NotebookDocumentFilterScheme.fromJson,
+        structures.NotebookDocumentFilterPattern.fromJson
       )
       .asInstanceOf[Decoder[NotebookDocumentFilter]]
 
   given toJson: Encoder[NotebookDocumentFilter] =
     Enc
       .union3[
-        NotebookDocumentFilter.S0,
-        NotebookDocumentFilter.S1,
-        NotebookDocumentFilter.S2
+        structures.NotebookDocumentFilterNotebookType,
+        structures.NotebookDocumentFilterScheme,
+        structures.NotebookDocumentFilterPattern
       ](
-        NotebookDocumentFilter.S0.toJson,
-        NotebookDocumentFilter.S1.toJson,
-        NotebookDocumentFilter.S2.toJson
+        structures.NotebookDocumentFilterNotebookType.toJson,
+        structures.NotebookDocumentFilterScheme.toJson,
+        structures.NotebookDocumentFilterPattern.toJson
       )
       .asInstanceOf[Encoder[NotebookDocumentFilter]]
 end aliases_NotebookDocumentFilter
-
-private[lsp] trait aliases_NotebookDocumentFilter_S0Codec:
-  import aliases.NotebookDocumentFilter.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_notebookType: Decoder[String] = Decoder.decodeString
-    val decode_scheme: Decoder[String]       = Decoder.decodeString
-    val decode_pattern: Decoder[String]      = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        notebookType <- dec.get("notebookType", decode_notebookType)
-        scheme       <- dec.getOpt("scheme", decode_scheme)
-        pattern      <- dec.getOpt("pattern", decode_pattern)
-      yield S0(
-        notebookType,
-        scheme,
-        pattern
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_notebookType: Encoder[String] = Encoder.encodeString
-    val encode_scheme: Encoder[String]       = Encoder.encodeString
-    val encode_pattern: Encoder[String]      = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("notebookType", a.notebookType, encode_notebookType)
-      a.scheme.foreach: v =>
-        enc.field("scheme", v, encode_scheme)
-      a.pattern.foreach: v =>
-        enc.field("pattern", v, encode_pattern)
-  end toJson
-end aliases_NotebookDocumentFilter_S0Codec
-
-private[lsp] trait aliases_NotebookDocumentFilter_S1Codec:
-  import aliases.NotebookDocumentFilter.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_notebookType: Decoder[String] = Decoder.decodeString
-    val decode_scheme: Decoder[String]       = Decoder.decodeString
-    val decode_pattern: Decoder[String]      = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        notebookType <- dec.getOpt("notebookType", decode_notebookType)
-        scheme       <- dec.get("scheme", decode_scheme)
-        pattern      <- dec.getOpt("pattern", decode_pattern)
-      yield S1(
-        notebookType,
-        scheme,
-        pattern
-      )
-  end fromJson
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_notebookType: Encoder[String] = Encoder.encodeString
-    val encode_scheme: Encoder[String]       = Encoder.encodeString
-    val encode_pattern: Encoder[String]      = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      a.notebookType.foreach: v =>
-        enc.field("notebookType", v, encode_notebookType)
-      enc.field("scheme", a.scheme, encode_scheme)
-      a.pattern.foreach: v =>
-        enc.field("pattern", v, encode_pattern)
-  end toJson
-end aliases_NotebookDocumentFilter_S1Codec
-
-private[lsp] trait aliases_NotebookDocumentFilter_S2Codec:
-  import aliases.NotebookDocumentFilter.*
-  given fromJson: Decoder[S2] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_notebookType: Decoder[String] = Decoder.decodeString
-    val decode_scheme: Decoder[String]       = Decoder.decodeString
-    val decode_pattern: Decoder[String]      = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        notebookType <- dec.getOpt("notebookType", decode_notebookType)
-        scheme       <- dec.getOpt("scheme", decode_scheme)
-        pattern      <- dec.get("pattern", decode_pattern)
-      yield S2(
-        notebookType,
-        scheme,
-        pattern
-      )
-  end fromJson
-  given toJson: Encoder[S2] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_notebookType: Encoder[String] = Encoder.encodeString
-    val encode_scheme: Encoder[String]       = Encoder.encodeString
-    val encode_pattern: Encoder[String]      = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      a.notebookType.foreach: v =>
-        enc.field("notebookType", v, encode_notebookType)
-      a.scheme.foreach: v =>
-        enc.field("scheme", v, encode_scheme)
-      enc.field("pattern", a.pattern, encode_pattern)
-  end toJson
-end aliases_NotebookDocumentFilter_S2Codec
 
 private[lsp] trait aliases_Pattern:
 
@@ -14978,63 +16054,30 @@ private[lsp] trait aliases_PrepareRenameResult:
 
   given fromJson: Decoder[PrepareRenameResult] =
     Dec
-      .union3[structures.Range, PrepareRenameResult.S0, PrepareRenameResult.S1](
+      .union3[
+        structures.Range,
+        structures.PrepareRenamePlaceholder,
+        structures.PrepareRenameDefaultBehavior
+      ](
         structures.Range.fromJson,
-        PrepareRenameResult.S0.fromJson,
-        PrepareRenameResult.S1.fromJson
+        structures.PrepareRenamePlaceholder.fromJson,
+        structures.PrepareRenameDefaultBehavior.fromJson
       )
       .asInstanceOf[Decoder[PrepareRenameResult]]
 
   given toJson: Encoder[PrepareRenameResult] =
     Enc
-      .union3[structures.Range, PrepareRenameResult.S0, PrepareRenameResult.S1](
+      .union3[
+        structures.Range,
+        structures.PrepareRenamePlaceholder,
+        structures.PrepareRenameDefaultBehavior
+      ](
         structures.Range.toJson,
-        PrepareRenameResult.S0.toJson,
-        PrepareRenameResult.S1.toJson
+        structures.PrepareRenamePlaceholder.toJson,
+        structures.PrepareRenameDefaultBehavior.toJson
       )
       .asInstanceOf[Encoder[PrepareRenameResult]]
 end aliases_PrepareRenameResult
-
-private[lsp] trait aliases_PrepareRenameResult_S0Codec:
-  import aliases.PrepareRenameResult.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_range: Decoder[structures.Range] = structures.Range.fromJson
-    val decode_placeholder: Decoder[String]     = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        range       <- dec.get("range", decode_range)
-        placeholder <- dec.get("placeholder", decode_placeholder)
-      yield S0(
-        range,
-        placeholder
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_range: Encoder[structures.Range] = structures.Range.toJson
-    val encode_placeholder: Encoder[String]     = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("range", a.range, encode_range)
-      enc.field("placeholder", a.placeholder, encode_placeholder)
-end aliases_PrepareRenameResult_S0Codec
-
-private[lsp] trait aliases_PrepareRenameResult_S1Codec:
-  import aliases.PrepareRenameResult.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_defaultBehavior: Decoder[Boolean] = Decoder.decodeBoolean
-    Dec.fromJsonObject: dec =>
-      for defaultBehavior <- dec.get("defaultBehavior", decode_defaultBehavior)
-      yield S1(
-        defaultBehavior
-      )
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_defaultBehavior: Encoder[Boolean] = Encoder.encodeBoolean
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("defaultBehavior", a.defaultBehavior, encode_defaultBehavior)
-end aliases_PrepareRenameResult_S1Codec
 
 private[lsp] trait aliases_ProgressToken:
 
@@ -15049,203 +16092,67 @@ private[lsp] trait aliases_ProgressToken:
       .asInstanceOf[Encoder[ProgressToken]]
 end aliases_ProgressToken
 
+private[lsp] trait aliases_RegularExpressionEngineKind:
+
+  given fromJson: Decoder[RegularExpressionEngineKind] =
+    Decoder.decodeString.asInstanceOf[Decoder[RegularExpressionEngineKind]]
+
+  given toJson: Encoder[RegularExpressionEngineKind] =
+    Encoder.encodeString.asInstanceOf[Encoder[RegularExpressionEngineKind]]
+
 private[lsp] trait aliases_TextDocumentContentChangeEvent:
 
   given fromJson: Decoder[TextDocumentContentChangeEvent] =
     Dec
       .union2[
-        TextDocumentContentChangeEvent.S0,
-        TextDocumentContentChangeEvent.S1
+        structures.TextDocumentContentChangePartial,
+        structures.TextDocumentContentChangeWholeDocument
       ](
-        TextDocumentContentChangeEvent.S0.fromJson,
-        TextDocumentContentChangeEvent.S1.fromJson
+        structures.TextDocumentContentChangePartial.fromJson,
+        structures.TextDocumentContentChangeWholeDocument.fromJson
       )
       .asInstanceOf[Decoder[TextDocumentContentChangeEvent]]
 
   given toJson: Encoder[TextDocumentContentChangeEvent] =
     Enc
       .union2[
-        TextDocumentContentChangeEvent.S0,
-        TextDocumentContentChangeEvent.S1
+        structures.TextDocumentContentChangePartial,
+        structures.TextDocumentContentChangeWholeDocument
       ](
-        TextDocumentContentChangeEvent.S0.toJson,
-        TextDocumentContentChangeEvent.S1.toJson
+        structures.TextDocumentContentChangePartial.toJson,
+        structures.TextDocumentContentChangeWholeDocument.toJson
       )
       .asInstanceOf[Encoder[TextDocumentContentChangeEvent]]
 end aliases_TextDocumentContentChangeEvent
-
-private[lsp] trait aliases_TextDocumentContentChangeEvent_S0Codec:
-  import aliases.TextDocumentContentChangeEvent.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_range: Decoder[structures.Range] = structures.Range.fromJson
-    val decode_rangeLength: Decoder[runtime.uinteger] = uinteger.fromJson
-    val decode_text: Decoder[String]                  = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        range       <- dec.get("range", decode_range)
-        rangeLength <- dec.getOpt("rangeLength", decode_rangeLength)
-        text        <- dec.get("text", decode_text)
-      yield S0(
-        range,
-        rangeLength,
-        text
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_range: Encoder[structures.Range]       = structures.Range.toJson
-    val encode_rangeLength: Encoder[runtime.uinteger] = uinteger.toJson
-    val encode_text: Encoder[String]                  = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("range", a.range, encode_range)
-      a.rangeLength.foreach: v =>
-        enc.field("rangeLength", v, encode_rangeLength)
-      enc.field("text", a.text, encode_text)
-  end toJson
-end aliases_TextDocumentContentChangeEvent_S0Codec
-
-private[lsp] trait aliases_TextDocumentContentChangeEvent_S1Codec:
-  import aliases.TextDocumentContentChangeEvent.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_text: Decoder[String] = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for text <- dec.get("text", decode_text)
-      yield S1(
-        text
-      )
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_text: Encoder[String] = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("text", a.text, encode_text)
-end aliases_TextDocumentContentChangeEvent_S1Codec
 
 private[lsp] trait aliases_TextDocumentFilter:
 
   given fromJson: Decoder[TextDocumentFilter] =
     Dec
       .union3[
-        TextDocumentFilter.S0,
-        TextDocumentFilter.S1,
-        TextDocumentFilter.S2
+        structures.TextDocumentFilterLanguage,
+        structures.TextDocumentFilterScheme,
+        structures.TextDocumentFilterPattern
       ](
-        TextDocumentFilter.S0.fromJson,
-        TextDocumentFilter.S1.fromJson,
-        TextDocumentFilter.S2.fromJson
+        structures.TextDocumentFilterLanguage.fromJson,
+        structures.TextDocumentFilterScheme.fromJson,
+        structures.TextDocumentFilterPattern.fromJson
       )
       .asInstanceOf[Decoder[TextDocumentFilter]]
 
   given toJson: Encoder[TextDocumentFilter] =
     Enc
       .union3[
-        TextDocumentFilter.S0,
-        TextDocumentFilter.S1,
-        TextDocumentFilter.S2
+        structures.TextDocumentFilterLanguage,
+        structures.TextDocumentFilterScheme,
+        structures.TextDocumentFilterPattern
       ](
-        TextDocumentFilter.S0.toJson,
-        TextDocumentFilter.S1.toJson,
-        TextDocumentFilter.S2.toJson
+        structures.TextDocumentFilterLanguage.toJson,
+        structures.TextDocumentFilterScheme.toJson,
+        structures.TextDocumentFilterPattern.toJson
       )
       .asInstanceOf[Encoder[TextDocumentFilter]]
 end aliases_TextDocumentFilter
-
-private[lsp] trait aliases_TextDocumentFilter_S0Codec:
-  import aliases.TextDocumentFilter.*
-  given fromJson: Decoder[S0] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    val decode_scheme: Decoder[String]   = Decoder.decodeString
-    val decode_pattern: Decoder[String]  = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        language <- dec.get("language", decode_language)
-        scheme   <- dec.getOpt("scheme", decode_scheme)
-        pattern  <- dec.getOpt("pattern", decode_pattern)
-      yield S0(
-        language,
-        scheme,
-        pattern
-      )
-  end fromJson
-  given toJson: Encoder[S0] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    val encode_scheme: Encoder[String]   = Encoder.encodeString
-    val encode_pattern: Encoder[String]  = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      enc.field("language", a.language, encode_language)
-      a.scheme.foreach: v =>
-        enc.field("scheme", v, encode_scheme)
-      a.pattern.foreach: v =>
-        enc.field("pattern", v, encode_pattern)
-  end toJson
-end aliases_TextDocumentFilter_S0Codec
-
-private[lsp] trait aliases_TextDocumentFilter_S1Codec:
-  import aliases.TextDocumentFilter.*
-  given fromJson: Decoder[S1] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    val decode_scheme: Decoder[String]   = Decoder.decodeString
-    val decode_pattern: Decoder[String]  = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        language <- dec.getOpt("language", decode_language)
-        scheme   <- dec.get("scheme", decode_scheme)
-        pattern  <- dec.getOpt("pattern", decode_pattern)
-      yield S1(
-        language,
-        scheme,
-        pattern
-      )
-  end fromJson
-  given toJson: Encoder[S1] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    val encode_scheme: Encoder[String]   = Encoder.encodeString
-    val encode_pattern: Encoder[String]  = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      a.language.foreach: v =>
-        enc.field("language", v, encode_language)
-      enc.field("scheme", a.scheme, encode_scheme)
-      a.pattern.foreach: v =>
-        enc.field("pattern", v, encode_pattern)
-  end toJson
-end aliases_TextDocumentFilter_S1Codec
-
-private[lsp] trait aliases_TextDocumentFilter_S2Codec:
-  import aliases.TextDocumentFilter.*
-  given fromJson: Decoder[S2] =
-    // cache all decoders for this type when fromJson first initialised
-    val decode_language: Decoder[String] = Decoder.decodeString
-    val decode_scheme: Decoder[String]   = Decoder.decodeString
-    val decode_pattern: Decoder[String]  = Decoder.decodeString
-    Dec.fromJsonObject: dec =>
-      for
-        language <- dec.getOpt("language", decode_language)
-        scheme   <- dec.getOpt("scheme", decode_scheme)
-        pattern  <- dec.get("pattern", decode_pattern)
-      yield S2(
-        language,
-        scheme,
-        pattern
-      )
-  end fromJson
-  given toJson: Encoder[S2] =
-    // cache all encoders for this type when toJson first initialised
-    val encode_language: Encoder[String] = Encoder.encodeString
-    val encode_scheme: Encoder[String]   = Encoder.encodeString
-    val encode_pattern: Encoder[String]  = Encoder.encodeString
-    Enc.toJsonObject: (enc, a) =>
-      a.language.foreach: v =>
-        enc.field("language", v, encode_language)
-      a.scheme.foreach: v =>
-        enc.field("scheme", v, encode_scheme)
-      enc.field("pattern", a.pattern, encode_pattern)
-  end toJson
-end aliases_TextDocumentFilter_S2Codec
 
 private[lsp] trait aliases_WorkspaceDocumentDiagnosticReport:
 

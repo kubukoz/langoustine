@@ -63,6 +63,19 @@ object CodeActionKind
     */
   val RefactorInline = entry("refactor.inline")
 
+  /** Base kind for refactoring move actions: `refactor.move`
+    *
+    * Example move actions:
+    *
+    *   - Move a function to a new file
+    *   - Move a property between classes
+    *   - Move method to base class
+    *   - ...
+    *
+    * @since 3.18.0
+    */
+  val RefactorMove = entry("refactor.move")
+
   /** Base kind for refactoring rewrite actions: 'refactor.rewrite'
     *
     * Example rewrite actions:
@@ -95,15 +108,24 @@ object CodeActionKind
     * @since 3.15.0
     */
   val SourceFixAll = entry("source.fixAll")
+
+  /** Base kind for all code actions applying to the entire notebook's scope.
+    * CodeActionKinds using this should always begin with `notebook.`
+    *
+    * @since 3.18.0
+    */
+  val Notebook     = entry("notebook")
   override def ALL = Set(
     Empty,
     QuickFix,
     Refactor,
     RefactorExtract,
     RefactorInline,
+    RefactorMove,
     RefactorRewrite,
     Source,
     SourceOrganizeImports,
-    SourceFixAll
+    SourceFixAll,
+    Notebook
   )
 end CodeActionKind

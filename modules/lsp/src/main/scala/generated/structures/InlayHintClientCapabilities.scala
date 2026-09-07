@@ -33,16 +33,7 @@ import runtime.{*, given}
   */
 case class InlayHintClientCapabilities(
     dynamicRegistration: Option[Boolean] = None,
-    resolveSupport: Option[InlayHintClientCapabilities.ResolveSupport] = None
+    resolveSupport: Option[structures.ClientInlayHintResolveOptions] = None
 )
 object InlayHintClientCapabilities
-    extends codecs.structures_InlayHintClientCapabilitiesCodec:
-  /** @param properties
-    *   The properties that a client can resolve lazily.
-    */
-  case class ResolveSupport(
-      properties: Vector[String]
-  )
-  object ResolveSupport
-      extends codecs.structures_InlayHintClientCapabilities_ResolveSupportCodec
-end InlayHintClientCapabilities
+    extends codecs.structures_InlayHintClientCapabilitiesCodec

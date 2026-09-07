@@ -26,6 +26,11 @@ import runtime.{*, given}
   * @param synchronization
   *   Defines which synchronization capabilities the client supports.
   *
+  * @param filters
+  *   Defines which filters the client supports.
+  *
+  * since 3.18.0
+  *
   * @param completion
   *   Capabilities specific to the `textDocument/completion` request.
   *
@@ -142,10 +147,16 @@ import runtime.{*, given}
   *   Capabilities specific to the diagnostic pull model.
   *
   * since 3.17.0
+  *
+  * @param inlineCompletion
+  *   Client capabilities specific to inline completions.
+  *
+  * since 3.18.0
   */
 case class TextDocumentClientCapabilities(
     synchronization: Option[structures.TextDocumentSyncClientCapabilities] =
       None,
+    filters: Option[structures.TextDocumentFilterClientCapabilities] = None,
     completion: Option[structures.CompletionClientCapabilities] = None,
     hover: Option[structures.HoverClientCapabilities] = None,
     signatureHelp: Option[structures.SignatureHelpClientCapabilities] = None,
@@ -183,7 +194,9 @@ case class TextDocumentClientCapabilities(
     typeHierarchy: Option[structures.TypeHierarchyClientCapabilities] = None,
     inlineValue: Option[structures.InlineValueClientCapabilities] = None,
     inlayHint: Option[structures.InlayHintClientCapabilities] = None,
-    diagnostic: Option[structures.DiagnosticClientCapabilities] = None
+    diagnostic: Option[structures.DiagnosticClientCapabilities] = None,
+    inlineCompletion: Option[structures.InlineCompletionClientCapabilities] =
+      None
 )
 object TextDocumentClientCapabilities
     extends codecs.structures_TextDocumentClientCapabilitiesCodec

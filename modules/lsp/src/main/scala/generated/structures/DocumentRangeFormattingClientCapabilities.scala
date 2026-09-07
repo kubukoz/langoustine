@@ -25,9 +25,15 @@ import runtime.{*, given}
   *
   * @param dynamicRegistration
   *   Whether range formatting supports dynamic registration.
+  *
+  * @param rangesSupport
+  *   Whether the client supports formatting multiple ranges at once.
+  *
+  * since 3.18.0
   */
 case class DocumentRangeFormattingClientCapabilities(
-    dynamicRegistration: Option[Boolean] = None
+    dynamicRegistration: Option[Boolean] = None,
+    rangesSupport: Option[Boolean] = None
 )
 object DocumentRangeFormattingClientCapabilities
     extends codecs.structures_DocumentRangeFormattingClientCapabilitiesCodec

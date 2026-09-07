@@ -86,6 +86,17 @@ import runtime.{*, given}
   *   Capabilities specific to the diagnostic requests scoped to the workspace.
   *
   * since 3.17.0.
+  *
+  * @param foldingRange
+  *   Capabilities specific to the folding range requests scoped to the
+  *   workspace.
+  *
+  * since 3.18.0
+  *
+  * @param textDocumentContent
+  *   Capabilities specific to the `workspace/textDocumentContent` request.
+  *
+  * since 3.18.0
   */
 case class WorkspaceClientCapabilities(
     applyEdit: Option[Boolean] = None,
@@ -108,7 +119,13 @@ case class WorkspaceClientCapabilities(
     inlineValue: Option[structures.InlineValueWorkspaceClientCapabilities] =
       None,
     inlayHint: Option[structures.InlayHintWorkspaceClientCapabilities] = None,
-    diagnostics: Option[structures.DiagnosticWorkspaceClientCapabilities] = None
+    diagnostics: Option[structures.DiagnosticWorkspaceClientCapabilities] =
+      None,
+    foldingRange: Option[structures.FoldingRangeWorkspaceClientCapabilities] =
+      None,
+    textDocumentContent: Option[
+      structures.TextDocumentContentClientCapabilities
+    ] = None
 )
 object WorkspaceClientCapabilities
     extends codecs.structures_WorkspaceClientCapabilitiesCodec

@@ -35,47 +35,7 @@ import runtime.{*, given}
   */
 case class NotebookDocumentChangeEvent(
     metadata: Option[aliases.LSPObject] = None,
-    cells: Option[NotebookDocumentChangeEvent.Cells] = None
+    cells: Option[structures.NotebookDocumentCellChanges] = None
 )
 object NotebookDocumentChangeEvent
-    extends codecs.structures_NotebookDocumentChangeEventCodec:
-  /** @param structure
-    *   Changes to the cell structure to add or remove cells.
-    *
-    * @param data
-    *   Changes to notebook cells properties like its kind, execution summary or
-    *   metadata.
-    *
-    * @param textContent
-    *   Changes to the text content of notebook cells.
-    */
-  case class Cells(
-      structure: Option[Cells.Structure] = None,
-      data: Option[Vector[structures.NotebookCell]] = None,
-      textContent: Option[Vector[Cells.S0]] = None
-  )
-  object Cells extends codecs.structures_NotebookDocumentChangeEvent_CellsCodec:
-    /** @param array
-      *   The change to the cell array.
-      *
-      * @param didOpen
-      *   Additional opened cell text documents.
-      *
-      * @param didClose
-      *   Additional closed cell text documents.
-      */
-    case class Structure(
-        array: structures.NotebookCellArrayChange,
-        didOpen: Option[Vector[structures.TextDocumentItem]] = None,
-        didClose: Option[Vector[structures.TextDocumentIdentifier]] = None
-    )
-    object Structure
-        extends codecs.structures_NotebookDocumentChangeEvent_Cells_StructureCodec
-    case class S0(
-        document: structures.VersionedTextDocumentIdentifier,
-        changes: Vector[aliases.TextDocumentContentChangeEvent]
-    )
-    object S0
-        extends codecs.structures_NotebookDocumentChangeEvent_Cells_S0Codec
-  end Cells
-end NotebookDocumentChangeEvent
+    extends codecs.structures_NotebookDocumentChangeEventCodec

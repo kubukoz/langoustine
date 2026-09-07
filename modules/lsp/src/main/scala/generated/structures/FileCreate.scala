@@ -26,9 +26,9 @@ import runtime.{*, given}
   * @since 3.16.0
   *
   * @param uri
-  *   A file:// URI for the location of the file/folder being created.
+  *   A URI for the location of the file/folder being created.
   */
 case class FileCreate(
-    uri: String
+    uri: runtime.DocumentUri
 )
 object FileCreate extends codecs.structures_FileCreateCodec

@@ -70,7 +70,7 @@ object SemanticTokensEncoderTest extends weaver.FunSuite:
     val result = encoder.encode(tokens).map(_.data.map(_.value))
 
     // This example is from
-    // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_semanticTokens
+    // https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#textDocument_semanticTokens
     expect.same(
       result,
       Right(

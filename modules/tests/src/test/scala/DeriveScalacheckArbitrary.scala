@@ -128,11 +128,21 @@ def genUnion2[T1: Arbitrary, T2: Arbitrary]: Arbitrary[T1 | T2] =
       edit <- Gen.oneOf(t1, t2)
     yield edit
 
+def genUnion3[T1: Arbitrary, T2: Arbitrary, T3: Arbitrary]
+    : Arbitrary[T1 | T2 | T3] =
+  Arbitrary:
+    for
+      t1   <- Arbitrary.arbitrary[T1]
+      t2   <- Arbitrary.arbitrary[T2]
+      t3   <- Arbitrary.arbitrary[T3]
+      edit <- Gen.oneOf(t1, t2, t3)
+    yield edit
+
 given genEditUnion: Arbitrary[TextEdit | InsertReplaceEdit] =
   genUnion2[TextEdit, InsertReplaceEdit]
 
-given genEditBla: Arbitrary[TextEdit | AnnotatedTextEdit] =
-  genUnion2[TextEdit, AnnotatedTextEdit]
+given genEditBla: Arbitrary[TextEdit | AnnotatedTextEdit | SnippetTextEdit] =
+  genUnion3[TextEdit, AnnotatedTextEdit, SnippetTextEdit]
 
 given [L <: String](using ValueOf[L]): Arbitrary[L] =
   Arbitrary(Gen.const(valueOf[L]))

@@ -22,6 +22,6 @@ import langoustine.*
 import runtime.{*, given}
 
 case class SetTraceParams(
-    value: enumerations.TraceValues
+    value: enumerations.TraceValue
 )
 object SetTraceParams extends codecs.structures_SetTraceParamsCodec

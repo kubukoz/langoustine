@@ -33,18 +33,6 @@ import runtime.{*, given}
   */
 case class InitializeResult(
     capabilities: structures.ServerCapabilities,
-    serverInfo: Option[InitializeResult.ServerInfo] = None
+    serverInfo: Option[structures.ServerInfo] = None
 )
-object InitializeResult extends codecs.structures_InitializeResultCodec:
-  /** @param name
-    *   The name of the server as defined by the server.
-    *
-    * @param version
-    *   The server's version as defined by the server.
-    */
-  case class ServerInfo(
-      name: String,
-      version: Option[String] = None
-  )
-  object ServerInfo extends codecs.structures_InitializeResult_ServerInfoCodec
-end InitializeResult
+object InitializeResult extends codecs.structures_InitializeResultCodec

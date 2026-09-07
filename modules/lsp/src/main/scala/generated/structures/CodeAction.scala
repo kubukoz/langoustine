@@ -79,25 +79,21 @@ import runtime.{*, given}
   *   `textDocument/codeAction` and a `codeAction/resolve` request.
   *
   * since 3.16.0
+  *
+  * @param tags
+  *   Tags for this code action.
+  *
+  * since 3.18.0
   */
 case class CodeAction(
     title: String,
     kind: Option[enumerations.CodeActionKind] = None,
     diagnostics: Option[Vector[structures.Diagnostic]] = None,
     isPreferred: Option[Boolean] = None,
-    disabled: Option[CodeAction.Disabled] = None,
+    disabled: Option[structures.CodeActionDisabled] = None,
     edit: Option[structures.WorkspaceEdit] = None,
     command: Option[structures.Command] = None,
-    data: Option[io.circe.Json] = None
+    data: Option[io.circe.Json] = None,
+    tags: Option[Vector[enumerations.CodeActionTag]] = None
 )
-object CodeAction extends codecs.structures_CodeActionCodec:
-  /** @param reason
-    *   Human readable description of why the code action is currently disabled.
-    *
-    * This is displayed in the code actions UI.
-    */
-  case class Disabled(
-      reason: String
-  )
-  object Disabled extends codecs.structures_CodeAction_DisabledCodec
-end CodeAction
+object CodeAction extends codecs.structures_CodeActionCodec

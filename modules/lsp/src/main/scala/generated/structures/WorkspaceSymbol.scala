@@ -56,15 +56,11 @@ import runtime.{*, given}
   *   symbols.
   */
 case class WorkspaceSymbol(
-    location: (structures.Location | WorkspaceSymbol.S0),
+    location: (structures.Location | structures.LocationUriOnly),
     data: Option[io.circe.Json] = None,
     name: String,
     kind: enumerations.SymbolKind,
     tags: Option[Vector[enumerations.SymbolTag]] = None,
     containerName: Option[String] = None
 )
-object WorkspaceSymbol extends codecs.structures_WorkspaceSymbolCodec:
-  case class S0(
-      uri: runtime.DocumentUri
-  )
-  object S0 extends codecs.structures_WorkspaceSymbol_S0Codec
+object WorkspaceSymbol extends codecs.structures_WorkspaceSymbolCodec
